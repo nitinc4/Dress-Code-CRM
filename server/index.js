@@ -21,9 +21,17 @@ mongoose.connect(MONGODB_URI)
   .then(() => console.log('Connected to MongoDB successfully.'))
   .catch(err => console.error('Could not connect to MongoDB:', err));
 
-// Routes can be imported and used here later
-// const userRoutes = require('./routes/user');
-// app.use('/api/users', userRoutes);
+const authRoutes = require('./routes/auth');
+const customerRoutes = require('./routes/customers');
+const productRoutes = require('./routes/products');
+const orderRoutes = require('./routes/orders');
+const inventoryRoutes = require('./routes/inventory');
+
+app.use('/api/auth', authRoutes);
+app.use('/api/customers', customerRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/inventory', inventoryRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server is listening on port ${PORT}`);
