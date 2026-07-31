@@ -1,0 +1,37 @@
+Modules:
+    1. Admin(web based)
+        - admin panel with dashboard, invoices, orders, customers, product catelouge[mens/womens wear, fabric(material),categories, designs/addons, ], employees [sales rep, tailors, master, hand-workers, warehouse manager], warehouse, current orders,  settings,
+    2. Employee & Admin(mobile based)
+        - employees [sales rep, tailors, master, hand-workers, warehouse manager], seperate logins and flow for all of these and the admin similar to the admin panel but lesser info
+            - Sales rep:
+                - select existing customers / on-board new customers, or create a groupe with group head
+                - place customer orders
+                - take measurements 
+                - view order status and upcoming trials and deliveries
+                - 
+            - Master:
+                - view orders
+                - assign orders to handworkers
+                - assign orders to tailors
+                - view current order queue and update order status
+                - temp reassign orders in case of absence 
+                - see current status of tailors and see tailors on leave 
+                -
+            - Tailor:
+                - view assigned orders[design, fabric, measurements, order id, due date, priority]
+                - update order status
+                - apply for leave
+                - see attendance status of tailors
+                -
+            - Hand-worker:
+                - view assigned orders[design, fabric, measurements, requried handiwork and location, order id, due date, priority]
+                - update order status
+                - apply for leave
+                - see attendance status of hand-workers
+            - warehouse manager:
+                - view all inventory
+                - manage incoming and outgoing stock
+                - view low stock alerts
+                - create purchase orders
+                - receive shipments
+                - 
