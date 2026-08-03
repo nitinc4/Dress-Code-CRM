@@ -59,4 +59,16 @@ class OrderService {
       return {'success': false, 'message': e.toString()};
     }
   }
+
+  static Future<Map<String, dynamic>> requestFabric(String id, String requestDetails) async {
+    try {
+      final response = await ApiClient.put('/orders/$id', {'fabricRequest': requestDetails});
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': jsonDecode(response.body)};
+      }
+      return {'success': false, 'message': 'Failed to submit fabric request'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
 }

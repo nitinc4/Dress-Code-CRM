@@ -123,7 +123,15 @@ class _CuttingMasterDashboardState extends State<CuttingMasterDashboard> {
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text('Order #${order['_id']?.substring(0,6)} - ${order['customerName']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: darkText)),
+                                        Expanded(
+                                          child: Text(
+                                            'Order #${order['_id']?.substring(0,6)} - ${order['customerName']} (${order['garmentCategory'] ?? 'Garment'})',
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: darkText),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                           decoration: BoxDecoration(color: const Color(0xFFFEF3C7), borderRadius: BorderRadius.circular(10)),

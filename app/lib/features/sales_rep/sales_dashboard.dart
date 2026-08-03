@@ -163,7 +163,7 @@ class _SalesDashboardState extends State<SalesDashboard> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Order #$orderId - $cName', style: const TextStyle(fontWeight: FontWeight.bold, color: darkText)),
+                              Text('Order #$orderId - $cName (${order['garmentCategory'] ?? 'Garment'})', style: const TextStyle(fontWeight: FontWeight.bold, color: darkText), maxLines: 2, overflow: TextOverflow.ellipsis),
                               Text('Balance: ₹$finalBill', style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
                             ],
                           ),

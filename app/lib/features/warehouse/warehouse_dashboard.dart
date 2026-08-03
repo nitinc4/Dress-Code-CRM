@@ -12,6 +12,7 @@ class WarehouseDashboard extends StatefulWidget {
 class _WarehouseDashboardState extends State<WarehouseDashboard> {
   List<dynamic> _inventory = [];
   List<dynamic> _dispensingOrders = [];
+  List<dynamic> _extraRequests = [];
   bool _isLoading = true;
 
   @override
@@ -24,10 +25,12 @@ class _WarehouseDashboardState extends State<WarehouseDashboard> {
     final list = await InventoryService.getInventory();
     final allOrders = await OrderService.getOrders();
     final pendingFabric = allOrders.where((o) => o['status'] == 'fabric_dispensing').toList();
+    final extraReqs = allOrders.where((o) => o['fabricRequest'] != null && o['fabricRequest'].toString().trim().isNotEmpty).toList();
     if (mounted) {
       setState(() {
         _inventory = list;
         _dispensingOrders = pendingFabric;
+        _extraRequests = extraReqs;
         _isLoading = false;
       });
     }
@@ -43,6 +46,20 @@ class _WarehouseDashboardState extends State<WarehouseDashboard> {
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message']), backgroundColor: Colors.red));
+      }
+    }
+  }
+
+  Future<void> _fulfillExtraRequest(String orderId) async {
+    final res = await OrderService.requestFabric(orderId, '');
+    if (res['success']) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Extra Fabric Request fulfilled!'), backgroundColor: Color(0xFF16A34A)));
+        _fetchData();
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message'] ?? 'Failed to fulfill'), backgroundColor: Colors.red));
       }
     }
   }
@@ -188,6 +205,52 @@ class _WarehouseDashboardState extends State<WarehouseDashboard> {
                               ElevatedButton(
                                 onPressed: () => _dispenseFabric(order['_id']),
                                 style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD97706), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4)),
+                                child: const Text('Fulfill', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                              )
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+
+                // Extra Fabric Requests from Tailors
+                if (_extraRequests.isNotEmpty)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Tailor Extra Fabric Requests', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText)),
+                      const SizedBox(height: 12),
+                      ..._extraRequests.map((order) {
+                        final orderId = order['_id']?.substring(0, 8) ?? 'Unknown';
+                        final requestDetails = order['fabricRequest'] ?? 'Fabric Request';
+                        final customerName = order['customerName'] ?? 'Customer';
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEE2E2), // Soft red
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFFCA5A5)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.assignment_late_outlined, color: Colors.redAccent),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Order #$orderId - $customerName', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red, fontSize: 13)),
+                                    const SizedBox(height: 4),
+                                    Text(requestDetails, style: const TextStyle(color: Colors.black87, fontSize: 12)),
+                                  ],
+                                ),
+                              ),
+                              ElevatedButton(
+                                onPressed: () => _fulfillExtraRequest(order['_id']),
+                                style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4)),
                                 child: const Text('Fulfill', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                               )
                             ],

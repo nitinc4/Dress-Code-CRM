@@ -90,11 +90,19 @@ class _TailorDashboardState extends State<TailorDashboard> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
+                    final res = await OrderService.requestFabric(order['_id'], textController.text.trim());
+                    if (!context.mounted) return;
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Fabric Request sent to Warehouse Manager!'), backgroundColor: Color(0xFF16A34A)),
-                    );
+                    if (res['success']) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Fabric Request sent to Warehouse Manager!'), backgroundColor: Color(0xFF16A34A)),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(res['message'] ?? 'Failed to send request'), backgroundColor: Colors.red),
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(backgroundColor: goldColor, foregroundColor: darkText),
                   child: const Text('SUBMIT REQUEST', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -176,7 +184,15 @@ class _TailorDashboardState extends State<TailorDashboard> {
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text('Order #${order['_id']?.substring(0,6)} - ${order['customerName']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: darkText)),
+                                        Expanded(
+                                          child: Text(
+                                            'Order #${order['_id']?.substring(0,6)} - ${order['customerName']} (${order['garmentCategory'] ?? 'Garment'})',
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: darkText),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                           decoration: BoxDecoration(color: const Color(0xFFFEF3C7), borderRadius: BorderRadius.circular(10)),
