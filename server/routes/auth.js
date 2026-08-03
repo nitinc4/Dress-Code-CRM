@@ -54,4 +54,25 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Update Profile (Employee or Admin)
+router.put('/profile/:id', async (req, res) => {
+  try {
+    const { email, profilePicture, bankingDetails, name } = req.body;
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (name) user.name = name;
+    if (email) user.email = email;
+    if (profilePicture) user.profilePicture = profilePicture;
+    if (bankingDetails) {
+      user.bankingDetails = { ...user.bankingDetails, ...bankingDetails };
+    }
+
+    await user.save();
+    res.json({ message: 'Profile updated successfully', user });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

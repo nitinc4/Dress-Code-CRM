@@ -10,6 +10,14 @@ const userSchema = new mongoose.Schema({
     required: true 
   },
   status: { type: String, enum: ['active', 'inactive', 'on_leave'], default: 'active' },
+  email: { type: String },
+  profilePicture: { type: String },
+  bankingDetails: {
+    accountName: { type: String },
+    accountNumber: { type: String },
+    bankName: { type: String },
+    ifsc: { type: String }
+  },
   createdAt: { type: Date, default: Date.now }
 });
 
