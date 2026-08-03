@@ -1,25 +1,69 @@
 import 'package:flutter/material.dart';
+import '../auth/role_selection_screen.dart';
 import '../../core/services/auth_service.dart';
-import '../auth/login_screen.dart';
 import 'order_flow/order_flow_screen.dart';
 
-class SalesDashboard extends StatelessWidget {
+import '../../core/services/order_service.dart';
+
+class SalesDashboard extends StatefulWidget {
   const SalesDashboard({super.key});
+
+  @override
+  State<SalesDashboard> createState() => _SalesDashboardState();
+}
+
+class _SalesDashboardState extends State<SalesDashboard> {
+  List<dynamic> _deliveryOrders = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchOrders();
+  }
+
+  Future<void> _fetchOrders() async {
+    final allOrders = await OrderService.getOrders();
+    final delivery = allOrders.where((o) => o['status'] == 'delivery').toList();
+    if (mounted) {
+      setState(() {
+        _deliveryOrders = delivery;
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _markCompleted(String orderId) async {
+    final res = await OrderService.updateOrderStatus(orderId, 'completed');
+    if (res['success']) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Order Completed!'), backgroundColor: Color(0xFF16A34A)));
+        _fetchOrders();
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message']), backgroundColor: Colors.red));
+      }
+    }
+  }
 
   void _logout(BuildContext context) async {
     await AuthService.logout();
     if (!context.mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
       (route) => false,
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    const goldColor = Color(0xFFD4AF37);
+    const darkText = Color(0xFF121212);
+
     return Scaffold(
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -35,7 +79,7 @@ class SalesDashboard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: Theme.of(context).primaryColor, // Gold
+                          color: goldColor,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -56,42 +100,6 @@ class SalesDashboard extends StatelessWidget {
               ),
               const SizedBox(height: 40),
               
-              // Stats Card
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Theme.of(context).primaryColor, Theme.of(context).primaryColor.withOpacity(0.8)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Theme.of(context).primaryColor.withOpacity(0.3),
-                      blurRadius: 16,
-                      offset: const Offset(0, 8),
-                    )
-                  ],
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.analytics_outlined, color: Colors.white),
-                        SizedBox(width: 8),
-                        Text('TODAY\'S ORDERS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, letterSpacing: 1.1)),
-                      ],
-                    ),
-                    SizedBox(height: 16),
-                    Text('0', style: TextStyle(fontSize: 48, fontWeight: FontWeight.w800, color: Colors.white)),
-                  ],
-                ),
-              ),
-              
-              const SizedBox(height: 32),
-              
               // Action Button
               ElevatedButton(
                 onPressed: () {
@@ -105,11 +113,12 @@ class SalesDashboard extends StatelessWidget {
                         );
                       },
                     ),
-                  );
+                  ).then((_) => _fetchOrders());
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black87, // Black button for contrast
-                  foregroundColor: Theme.of(context).primaryColor, // Gold text/icon
+                  backgroundColor: Colors.black87,
+                  foregroundColor: goldColor,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -120,6 +129,54 @@ class SalesDashboard extends StatelessWidget {
                   ],
                 ),
               ),
+              const SizedBox(height: 32),
+
+              const Text('Ready for Delivery', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText)),
+              const SizedBox(height: 16),
+
+              if (_isLoading)
+                const Center(child: CircularProgressIndicator(color: goldColor))
+              else if (_deliveryOrders.isEmpty)
+                const Center(child: Text('No orders ready for delivery.', style: TextStyle(color: Colors.black54)))
+              else
+                ..._deliveryOrders.map((order) {
+                  final orderId = order['_id']?.substring(0, 8) ?? 'Unknown';
+                  final cName = order['customerName'] ?? 'Customer';
+                  final finalBill = order['pricingBreakdown']?['finalBill'] ?? 0.0;
+                  
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))
+                      ]
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.shopping_bag, color: goldColor),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Order #$orderId - $cName', style: const TextStyle(fontWeight: FontWeight.bold, color: darkText)),
+                              Text('Balance: ₹$finalBill', style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
+                            ],
+                          ),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => _markCompleted(order['_id']),
+                          style: ElevatedButton.styleFrom(backgroundColor: goldColor, foregroundColor: darkText, padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4)),
+                          child: const Text('Deliver'),
+                        )
+                      ],
+                    ),
+                  );
+                }).toList(),
             ],
           ),
         ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/services/inventory_service.dart';
+import '../../core/services/order_service.dart';
 
 class WarehouseDashboard extends StatefulWidget {
   const WarehouseDashboard({super.key});
@@ -10,21 +11,39 @@ class WarehouseDashboard extends StatefulWidget {
 
 class _WarehouseDashboardState extends State<WarehouseDashboard> {
   List<dynamic> _inventory = [];
+  List<dynamic> _dispensingOrders = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchInventory();
+    _fetchData();
   }
 
-  Future<void> _fetchInventory() async {
+  Future<void> _fetchData() async {
     final list = await InventoryService.getInventory();
+    final allOrders = await OrderService.getOrders();
+    final pendingFabric = allOrders.where((o) => o['status'] == 'fabric_dispensing').toList();
     if (mounted) {
       setState(() {
         _inventory = list;
+        _dispensingOrders = pendingFabric;
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _dispenseFabric(String orderId) async {
+    final res = await OrderService.updateOrderStatus(orderId, 'cutting');
+    if (res['success']) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fabric Dispensed! Order sent to Cutting.'), backgroundColor: Color(0xFF16A34A)));
+        _fetchData();
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message']), backgroundColor: Colors.red));
+      }
     }
   }
 
@@ -140,32 +159,44 @@ class _WarehouseDashboardState extends State<WarehouseDashboard> {
                 ),
                 const SizedBox(height: 24),
 
-                // Tailor Requests Alert
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEF3C7),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFFDE68A)),
-                  ),
-                  child: Row(
+                // Fabric Dispensing Orders
+                if (_dispensingOrders.isNotEmpty)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.mark_chat_unread_outlined, color: Color(0xFFD97706)),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Text('Tailor Request: 1.5m Cotton Twill for Order #1025', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFD97706), fontSize: 13)),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fabric Dispensed to Tailor!'), backgroundColor: Color(0xFF16A34A)));
-                        },
-                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD97706), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4)),
-                        child: const Text('Fulfill', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                      )
+                      const Text('Fabric Dispensing Queue', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText)),
+                      const SizedBox(height: 12),
+                      ..._dispensingOrders.map((order) {
+                        final orderId = order['_id']?.substring(0, 8) ?? 'Unknown';
+                        final fabricName = order['fabricDetails']?['name'] ?? 'Fabric';
+                        final meters = order['fabricDetails']?['meters'] ?? 0;
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF3C7),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFFDE68A)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.mark_chat_unread_outlined, color: Color(0xFFD97706)),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text('Order #$orderId: Dispense $meters meters of $fabricName', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFD97706), fontSize: 13)),
+                              ),
+                              ElevatedButton(
+                                onPressed: () => _dispenseFabric(order['_id']),
+                                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD97706), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4)),
+                                child: const Text('Fulfill', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                              )
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      const SizedBox(height: 24),
                     ],
                   ),
-                ),
-                const SizedBox(height: 24),
 
                 // Live Stock Items
                 Row(

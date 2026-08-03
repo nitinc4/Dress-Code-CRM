@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/order_service.dart';
 
 class TailorDashboard extends StatefulWidget {
@@ -11,6 +12,7 @@ class TailorDashboard extends StatefulWidget {
 class _TailorDashboardState extends State<TailorDashboard> {
   List<dynamic> _orders = [];
   bool _isLoading = true;
+  String _userId = '';
 
   @override
   void initState() {
@@ -19,12 +21,37 @@ class _TailorDashboardState extends State<TailorDashboard> {
   }
 
   Future<void> _fetchAssignedWork() async {
+    final prefs = await SharedPreferences.getInstance();
+    _userId = prefs.getString('user_id') ?? '';
+
     final list = await OrderService.getOrders();
+    // Filter to stitching or alterations status AND assigned to this exact tailor
+    final myOrders = list.where((o) => 
+      (o['status'] == 'stitching' || o['status'] == 'alterations') && 
+      o['assignedTailor'] != null && 
+      o['assignedTailor']['_id'] == _userId
+    ).toList();
+
     if (mounted) {
       setState(() {
-        _orders = list;
+        _orders = myOrders;
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _markCompleted(String orderId, String currentStatus) async {
+    final nextStatus = currentStatus == 'stitching' ? 'trial' : 'trial_2';
+    final res = await OrderService.updateOrderStatus(orderId, nextStatus);
+    if (res['success']) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Marked as Completed! Order sent to $nextStatus.'), backgroundColor: const Color(0xFF16A34A)));
+        _fetchAssignedWork();
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message']), backgroundColor: Colors.red));
+      }
     }
   }
 
@@ -97,7 +124,6 @@ class _TailorDashboardState extends State<TailorDashboard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Tailor Header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -118,7 +144,6 @@ class _TailorDashboardState extends State<TailorDashboard> {
                 ),
                 const SizedBox(height: 24),
 
-                // Assigned Orders Header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -135,6 +160,7 @@ class _TailorDashboardState extends State<TailorDashboard> {
                         : Column(
                             children: _orders.map((order) {
                               final measurements = order['measurements'] as Map<String, dynamic>? ?? {};
+                              final status = order['status'] ?? 'pending';
 
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 16),
@@ -150,7 +176,7 @@ class _TailorDashboardState extends State<TailorDashboard> {
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text(order['customerName'] ?? 'Customer', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: darkText)),
+                                        Text('Order #${order['_id']?.substring(0,6)} - ${order['customerName']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: darkText)),
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                           decoration: BoxDecoration(color: const Color(0xFFFEF3C7), borderRadius: BorderRadius.circular(10)),
@@ -159,6 +185,8 @@ class _TailorDashboardState extends State<TailorDashboard> {
                                       ],
                                     ),
                                     const SizedBox(height: 8),
+                                    Text('Status: ${status.toUpperCase()}', style: const TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 13)),
+                                    const SizedBox(height: 4),
                                     Text('Fabric: ${order['fabricDetails']?['color'] ?? 'Custom Material'} (${order['garmentCategory'] ?? 'Garment'})', style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
                                     const SizedBox(height: 12),
 
@@ -195,11 +223,7 @@ class _TailorDashboardState extends State<TailorDashboard> {
                                         const SizedBox(width: 12),
                                         Expanded(
                                           child: ElevatedButton(
-                                            onPressed: () {
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                const SnackBar(content: Text('Marked as Stitching Completed!'), backgroundColor: Color(0xFF16A34A)),
-                                              );
-                                            },
+                                            onPressed: () => _markCompleted(order['_id'], status),
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: const Color(0xFF16A34A),
                                               foregroundColor: Colors.white,

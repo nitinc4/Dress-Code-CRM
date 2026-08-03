@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/order_service.dart';
 
 class HandWorkerDashboard extends StatefulWidget {
@@ -11,6 +12,7 @@ class HandWorkerDashboard extends StatefulWidget {
 class _HandWorkerDashboardState extends State<HandWorkerDashboard> {
   List<dynamic> _orders = [];
   bool _isLoading = true;
+  String _userId = '';
 
   @override
   void initState() {
@@ -19,12 +21,36 @@ class _HandWorkerDashboardState extends State<HandWorkerDashboard> {
   }
 
   Future<void> _fetchHandworkOrders() async {
+    final prefs = await SharedPreferences.getInstance();
+    _userId = prefs.getString('user_id') ?? '';
+
     final list = await OrderService.getOrders();
+    // Filter to hand_work status AND assigned to this exact hand worker
+    final myOrders = list.where((o) => 
+      o['status'] == 'hand_work' && 
+      o['assignedHandworker'] != null && 
+      o['assignedHandworker']['_id'] == _userId
+    ).toList();
+
     if (mounted) {
       setState(() {
-        _orders = list;
+        _orders = myOrders;
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _markCompleted(String orderId) async {
+    final res = await OrderService.updateOrderStatus(orderId, 'stitching');
+    if (res['success']) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Handwork Marked as Completed! Order sent to Stitching.'), backgroundColor: Color(0xFF16A34A)));
+        _fetchHandworkOrders();
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message']), backgroundColor: Colors.red));
+      }
     }
   }
 
@@ -45,7 +71,6 @@ class _HandWorkerDashboardState extends State<HandWorkerDashboard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Hand-worker Header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -66,7 +91,6 @@ class _HandWorkerDashboardState extends State<HandWorkerDashboard> {
                 ),
                 const SizedBox(height: 24),
 
-                // Assigned Handwork Orders
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -96,7 +120,7 @@ class _HandWorkerDashboardState extends State<HandWorkerDashboard> {
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text(order['customerName'] ?? 'Customer', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: darkText)),
+                                        Text('Order #${order['_id']?.substring(0,6)} - ${order['customerName'] ?? 'Customer'}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: darkText)),
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                           decoration: BoxDecoration(color: const Color(0xFFFEF3C7), borderRadius: BorderRadius.circular(10)),
@@ -106,7 +130,6 @@ class _HandWorkerDashboardState extends State<HandWorkerDashboard> {
                                     ),
                                     const SizedBox(height: 8),
 
-                                    // Handwork specs box
                                     Container(
                                       width: double.infinity,
                                       padding: const EdgeInsets.all(12),
@@ -125,11 +148,7 @@ class _HandWorkerDashboardState extends State<HandWorkerDashboard> {
                                     SizedBox(
                                       width: double.infinity,
                                       child: ElevatedButton.icon(
-                                        onPressed: () {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Handwork Marked as Completed!'), backgroundColor: Color(0xFF16A34A)),
-                                          );
-                                        },
+                                        onPressed: () => _markCompleted(order['_id']),
                                         icon: const Icon(Icons.check_circle_outline, size: 18),
                                         label: const Text('MARK HANDWORK COMPLETED'),
                                         style: ElevatedButton.styleFrom(

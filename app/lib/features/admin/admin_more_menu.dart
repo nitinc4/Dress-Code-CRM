@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/services/auth_service.dart';
-import '../auth/login_screen.dart';
+import '../auth/role_selection_screen.dart';
 
 class AdminMoreMenu extends StatelessWidget {
   const AdminMoreMenu({super.key});
@@ -9,7 +9,7 @@ class AdminMoreMenu extends StatelessWidget {
     await AuthService.logout();
     if (!context.mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
       (route) => false,
     );
   }

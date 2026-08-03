@@ -3,7 +3,7 @@ import '../profile/profile_screen.dart';
 import 'leave_request_screen.dart';
 import 'payslip_screen.dart';
 import '../../core/services/auth_service.dart';
-import '../auth/login_screen.dart';
+import '../auth/role_selection_screen.dart';
 
 class EmployeeMoreScreen extends StatelessWidget {
   const EmployeeMoreScreen({super.key});
@@ -12,7 +12,7 @@ class EmployeeMoreScreen extends StatelessWidget {
     await AuthService.logout();
     if (!context.mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
       (route) => false,
     );
   }

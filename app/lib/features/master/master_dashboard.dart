@@ -44,11 +44,26 @@ class _MasterDashboardState extends State<MasterDashboard> {
     }
   }
 
-  void _showAssignModal(BuildContext context, Map<String, dynamic> order) {
+  Future<void> _updateStatus(String orderId, String status) async {
+    final res = await OrderService.updateOrderStatus(orderId, status);
+    if (res['success']) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Order advanced to $status!'), backgroundColor: const Color(0xFF16A34A)));
+        _loadData();
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message']), backgroundColor: Colors.red));
+      }
+    }
+  }
+
+  void _showAssignModal(BuildContext context, Map<String, dynamic> order, String roleTarget, String apiField) {
     const goldColor = Color(0xFFD4AF37);
     const darkText = Color(0xFF121212);
 
-    String? selectedWorker;
+    String? selectedWorkerId;
+    final targetEmployees = _employees.where((e) => e['role'] == roleTarget).toList();
 
     showModalBottomSheet(
       context: context,
@@ -65,28 +80,22 @@ class _MasterDashboardState extends State<MasterDashboard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Assign Order: ${order['customerName'] ?? 'Customer'}',
+                    'Assign ${roleTarget.toUpperCase()} for Order: ${order['customerName'] ?? 'Customer'}',
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Priority: ${(order['priority'] ?? 'Normal').toString().toUpperCase()}',
-                    style: TextStyle(color: (order['priority'] == 'urgent') ? Colors.redAccent : goldColor, fontWeight: FontWeight.bold),
-                  ),
                   const SizedBox(height: 20),
-                  const Text('Select Worker / Tailor / Hand-worker:', style: TextStyle(fontWeight: FontWeight.bold, color: darkText)),
-                  const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(fillColor: Colors.white, filled: true),
-                    items: _employees.map((emp) {
+                    hint: const Text('Select Employee'),
+                    items: targetEmployees.map((emp) {
                       return DropdownMenuItem<String>(
-                        value: emp['name'] as String,
+                        value: emp['_id'] as String,
                         child: Text('${emp['name']} (${emp['role']})'),
                       );
                     }).toList(),
                     onChanged: (val) {
                       setModalState(() {
-                        selectedWorker = val;
+                        selectedWorkerId = val;
                       });
                     },
                   ),
@@ -95,16 +104,20 @@ class _MasterDashboardState extends State<MasterDashboard> {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: selectedWorker == null
+                      onPressed: selectedWorkerId == null
                           ? null
-                          : () {
+                          : () async {
+                              final res = await OrderService.assignOrder(order['_id'], apiField, selectedWorkerId!);
+                              if (!context.mounted) return;
                               Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Assigned to $selectedWorker successfully!'),
-                                  backgroundColor: const Color(0xFF16A34A),
-                                ),
-                              );
+                              if (res['success']) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Assigned successfully!'), backgroundColor: Color(0xFF16A34A)),
+                                );
+                                _loadData();
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message']), backgroundColor: Colors.red));
+                              }
                             },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: goldColor,
@@ -129,6 +142,7 @@ class _MasterDashboardState extends State<MasterDashboard> {
     const darkText = Color(0xFF121212);
 
     final tailors = _employees.where((e) => e['role'] == 'tailor' || e['role'] == 'hand_worker').toList();
+    final activeOrders = _orders.where((o) => !['completed', 'sales', 'fabric_dispensing', 'delivery'].contains(o['status'])).toList();
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -142,7 +156,6 @@ class _MasterDashboardState extends State<MasterDashboard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -163,44 +176,10 @@ class _MasterDashboardState extends State<MasterDashboard> {
                 ),
                 const SizedBox(height: 24),
 
-                // Staff Status Summary
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE5E7EB)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Staff Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: darkText)),
-                          Text('${tailors.length} Workers Active', style: const TextStyle(color: Color(0xFF16A34A), fontWeight: FontWeight.bold, fontSize: 13)),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          _buildStaffBadge('Active Tailors', '${tailors.length}', const Color(0xFF16A34A)),
-                          const SizedBox(width: 12),
-                          _buildStaffBadge('On Leave', '1', Colors.orangeAccent),
-                          const SizedBox(width: 12),
-                          _buildStaffBadge('Reassigned', '0', Colors.blueAccent),
-                        ],
-                      )
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Priority Order Queue
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: const [
-                    Text('Priority Order Queue', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText)),
+                    Text('Active Production', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText)),
                     Text('Sorted by Priority', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 12)),
                   ],
                 ),
@@ -208,13 +187,14 @@ class _MasterDashboardState extends State<MasterDashboard> {
 
                 _isLoading
                     ? const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator(color: goldColor)))
-                    : _orders.isEmpty
-                        ? const Center(child: Text('No orders in queue to assign.', style: TextStyle(color: Color(0xFF6B7280))))
+                    : activeOrders.isEmpty
+                        ? const Center(child: Text('No active production orders.', style: TextStyle(color: Color(0xFF6B7280))))
                         : Column(
-                            children: _orders.map((order) {
+                            children: activeOrders.map((order) {
                               final priority = (order['priority'] ?? 'normal').toString();
                               final isUrgent = priority == 'urgent';
                               final isHigh = priority == 'high';
+                              final status = order['status'] ?? 'pending';
 
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 14),
@@ -234,7 +214,7 @@ class _MasterDashboardState extends State<MasterDashboard> {
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
-                                          order['customerName'] ?? 'Customer',
+                                          'Order #${order['_id']?.substring(0,6)} - ${order['customerName']}',
                                           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: darkText),
                                         ),
                                         Container(
@@ -255,24 +235,90 @@ class _MasterDashboardState extends State<MasterDashboard> {
                                       ],
                                     ),
                                     const SizedBox(height: 6),
-                                    Text('Category: ${order['garmentCategory'] ?? 'Suit/Garment'}', style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
-                                    Text('Design Specs: ${order['design'] ?? order['addons'] ?? 'Standard'}', style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
+                                    Text('Status: ${status.toUpperCase().replaceAll('_', ' ')}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: goldColor)),
                                     const SizedBox(height: 14),
 
-                                    SizedBox(
-                                      width: double.infinity,
-                                      child: ElevatedButton.icon(
-                                        onPressed: () => _showAssignModal(context, order),
-                                        icon: const Icon(Icons.assignment_ind, size: 18),
-                                        label: const Text('ASSIGN WORKER / REASSIGN'),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: goldColor,
-                                          foregroundColor: darkText,
-                                          padding: const EdgeInsets.symmetric(vertical: 12),
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                        ),
+                                    // Display assignments
+                                    if (order['assignedTailor'] != null)
+                                      Text('Tailor: ${order['assignedTailor']['name']}', style: const TextStyle(fontSize: 13)),
+                                    if (order['assignedHandworker'] != null)
+                                      Text('Handworker: ${order['assignedHandworker']['name']}', style: const TextStyle(fontSize: 13)),
+                                    
+                                    const SizedBox(height: 10),
+
+                                    // Master Actions
+                                    if (status == 'cutting') ...[
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: OutlinedButton(
+                                              onPressed: () => _showAssignModal(context, order, 'tailor', 'assignedTailor'),
+                                              child: const Text('Assign Tailor'),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: OutlinedButton(
+                                              onPressed: () => _showAssignModal(context, order, 'hand_worker', 'assignedHandworker'),
+                                              child: const Text('Assign HW'),
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    )
+                                      const SizedBox(height: 8),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: ElevatedButton(
+                                          onPressed: (order['assignedTailor'] != null && order['assignedHandworker'] != null) 
+                                              ? () => _updateStatus(order['_id'], 'hand_work')
+                                              : null,
+                                          style: ElevatedButton.styleFrom(backgroundColor: goldColor, foregroundColor: darkText),
+                                          child: const Text('Complete Cutting -> Hand-work'),
+                                        ),
+                                      )
+                                    ] else if (status == 'trial') ...[
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: OutlinedButton(
+                                              onPressed: () => _updateStatus(order['_id'], 'alterations'),
+                                              style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+                                              child: const Text('Alterations'),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: ElevatedButton(
+                                              onPressed: () => _updateStatus(order['_id'], 'trial_2'),
+                                              style: ElevatedButton.styleFrom(backgroundColor: goldColor, foregroundColor: darkText),
+                                              child: const Text('Approve Trial'),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ] else if (status == 'trial_2') ...[
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: ElevatedButton(
+                                          onPressed: () => _updateStatus(order['_id'], 'delivery'),
+                                          style: ElevatedButton.styleFrom(backgroundColor: goldColor, foregroundColor: darkText),
+                                          child: const Text('Ready for Delivery'),
+                                        ),
+                                      )
+                                    ] else if (['hand_work', 'stitching', 'alterations'].contains(status)) ...[
+                                      // Reassign button if worker is absent
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: OutlinedButton(
+                                          onPressed: () {
+                                            String targetRole = (status == 'hand_work') ? 'hand_worker' : 'tailor';
+                                            String targetField = (status == 'hand_work') ? 'assignedHandworker' : 'assignedTailor';
+                                            _showAssignModal(context, order, targetRole, targetField);
+                                          },
+                                          child: const Text('Reassign Worker (Temporary Override)'),
+                                        ),
+                                      )
+                                    ]
                                   ],
                                 ),
                               );
@@ -281,25 +327,6 @@ class _MasterDashboardState extends State<MasterDashboard> {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStaffBadge(String label, String count, Color color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
-          children: [
-            Text(label, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 2),
-            Text(count, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: color)),
-          ],
         ),
       ),
     );

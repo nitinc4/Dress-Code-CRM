@@ -51,10 +51,11 @@ router.post('/', async (req, res) => {
 // Get all orders (for Admin / Master)
 router.get('/', async (req, res) => {
   try {
-    const orders = await Order.find()
+      const orders = await Order.find()
       .populate('customer')
       .populate('assignedMaster', 'name')
       .populate('assignedTailor', 'name')
+      .populate('originalTailor', 'name')
       .populate('assignedHandworker', 'name')
       .sort({ createdAt: -1 });
     res.json(orders);
@@ -77,7 +78,14 @@ router.get('/:id', async (req, res) => {
 // Update order
 router.put('/:id', async (req, res) => {
   try {
-    const order = await Order.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const updateData = { ...req.body };
+    const currentOrder = await Order.findById(req.params.id);
+
+    if (updateData.assignedTailor && !currentOrder.originalTailor) {
+      updateData.originalTailor = updateData.assignedTailor;
+    }
+
+    const order = await Order.findByIdAndUpdate(req.params.id, updateData, { new: true });
     res.json(order);
   } catch (error) {
     res.status(500).json({ error: error.message });

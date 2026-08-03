@@ -110,6 +110,7 @@ class OrderProvider extends ChangeNotifier {
       'totalCost': finalBill,
       'discount': discount,
       'paymentStatus': paymentStatus,
+      'status': 'fabric_dispensing',
     };
 
     debugPrint('[ORDER_PROVIDER] Submitting order payload: $orderData');
