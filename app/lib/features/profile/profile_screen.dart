@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/auth_service.dart';
 import '../auth/login_screen.dart';
 
@@ -17,6 +18,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _bankNameController = TextEditingController();
   final _ifscController = TextEditingController();
 
+  String _userId = '';
+  String _userRole = 'Staff';
   bool _isLoading = false;
 
   @override
@@ -25,21 +28,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadProfileData();
   }
 
-  void _loadProfileData() {
-    // In a real app, we would fetch the user details from the backend here.
-    // For now, we leave the fields empty for the user to fill out.
+  Future<void> _loadProfileData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _userId = prefs.getString('user_id') ?? '';
+      _userRole = prefs.getString('user_role') ?? 'Staff';
+      _nameController.text = prefs.getString('user_name') ?? 'Employee';
+    });
   }
 
   Future<void> _updateProfile() async {
+    if (_userId.isEmpty) return;
+
     setState(() => _isLoading = true);
-    // Note: To implement this fully, we need the user's ID and an ApiClient method.
-    // For now, we simulate success.
-    await Future.delayed(const Duration(seconds: 1));
+
+    final result = await AuthService.updateProfile(_userId, {
+      'name': _nameController.text.trim(),
+      'email': _emailController.text.trim(),
+      'bankingDetails': {
+        'accountName': _accountNameController.text.trim(),
+        'accountNumber': _accountNumberController.text.trim(),
+        'bankName': _bankNameController.text.trim(),
+        'ifsc': _ifscController.text.trim(),
+      }
+    });
+
     setState(() => _isLoading = false);
+
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: const Text('Profile Updated Successfully', style: TextStyle(color: Colors.white)), backgroundColor: Theme.of(context).primaryColor),
-    );
+
+    if (result['success']) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_name', _nameController.text.trim());
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile & Banking details saved to database!'),
+          backgroundColor: Color(0xFF16A34A),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['message'] ?? 'Failed to update profile'), backgroundColor: Colors.redAccent),
+      );
+    }
   }
 
   void _logout(BuildContext context) async {
@@ -53,14 +85,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    const goldColor = Color(0xFFD4AF37);
+    const darkText = Color(0xFF121212);
+
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('My Profile', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+        title: const Text('My Profile', style: TextStyle(color: darkText, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
-        elevation: 0,
+        elevation: 0.5,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout, color: Colors.black87),
+            icon: const Icon(Icons.logout, color: Colors.redAccent),
             onPressed: () => _logout(context),
           )
         ],
@@ -76,74 +112,90 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   CircleAvatar(
                     radius: 50,
-                    backgroundColor: Theme.of(context).primaryColor.withOpacity(0.2),
-                    child: Icon(Icons.person, size: 50, color: Theme.of(context).primaryColor),
+                    backgroundColor: goldColor.withValues(alpha: 0.2),
+                    child: const Icon(Icons.person, size: 50, color: goldColor),
                   ),
                   Positioned(
                     bottom: 0,
                     right: 0,
                     child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor,
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
+                        color: goldColor,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.edit, size: 20, color: Colors.white),
+                      child: const Icon(Icons.camera_alt, size: 16, color: darkText),
                     ),
                   )
                 ],
               ),
             ),
+            const SizedBox(height: 12),
+            Center(
+              child: Text(
+                _userRole.toUpperCase(),
+                style: const TextStyle(fontWeight: FontWeight.bold, color: goldColor, letterSpacing: 1),
+              ),
+            ),
             const SizedBox(height: 32),
-            const Text('Personal Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+
+            const Text('Personal Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText)),
             const SizedBox(height: 16),
             TextField(
               controller: _nameController,
               decoration: const InputDecoration(labelText: 'Full Name', prefixIcon: Icon(Icons.person_outline)),
-              style: const TextStyle(color: Colors.black87),
+              style: const TextStyle(color: darkText),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _emailController,
               decoration: const InputDecoration(labelText: 'Email Address', prefixIcon: Icon(Icons.email_outlined)),
               keyboardType: TextInputType.emailAddress,
-              style: const TextStyle(color: Colors.black87),
+              style: const TextStyle(color: darkText),
             ),
             const SizedBox(height: 32),
-            const Text('Banking Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+
+            const Text('Banking Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText)),
             const SizedBox(height: 16),
             TextField(
               controller: _accountNameController,
               decoration: const InputDecoration(labelText: 'Account Holder Name', prefixIcon: Icon(Icons.account_balance_wallet_outlined)),
-              style: const TextStyle(color: Colors.black87),
+              style: const TextStyle(color: darkText),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _accountNumberController,
               decoration: const InputDecoration(labelText: 'Account Number', prefixIcon: Icon(Icons.numbers)),
               keyboardType: TextInputType.number,
-              style: const TextStyle(color: Colors.black87),
+              style: const TextStyle(color: darkText),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _bankNameController,
               decoration: const InputDecoration(labelText: 'Bank Name', prefixIcon: Icon(Icons.account_balance_outlined)),
-              style: const TextStyle(color: Colors.black87),
+              style: const TextStyle(color: darkText),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _ifscController,
               decoration: const InputDecoration(labelText: 'IFSC Code', prefixIcon: Icon(Icons.code)),
-              style: const TextStyle(color: Colors.black87),
+              style: const TextStyle(color: darkText),
             ),
             const SizedBox(height: 40),
+
             SizedBox(
               width: double.infinity,
+              height: 50,
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _updateProfile,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: goldColor,
+                  foregroundColor: darkText,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
                 child: _isLoading 
-                    ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text('SAVE CHANGES'),
+                    ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: darkText, strokeWidth: 2))
+                    : const Text('SAVE CHANGES', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               ),
             )
           ],

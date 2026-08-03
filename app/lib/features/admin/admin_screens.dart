@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+export 'admin_catalogue.dart';
 
 // 1. Admin Dashboard
 class AdminDashboardScreen extends StatelessWidget {
@@ -42,15 +43,6 @@ class AdminOngoingWorkScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Center(child: Text('Ongoing Work', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)));
-  }
-}
-
-// 6. Product Catalogue
-class AdminCatalogueScreen extends StatelessWidget {
-  const AdminCatalogueScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text('Product Catalogue', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)));
   }
 }
 

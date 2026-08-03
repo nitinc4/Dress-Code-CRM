@@ -1,14 +1,40 @@
 const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
+const Customer = require('../models/Customer');
 
 // Create Order (by Sales Rep)
 router.post('/', async (req, res) => {
   try {
-    const order = new Order(req.body);
+    const { customerName, customerPhone, customerAddress, measurements } = req.body;
+
+    // Find or create customer record
+    let customer = await Customer.findOne({ phone: customerPhone });
+    if (!customer && customerPhone) {
+      customer = new Customer({
+        name: customerName || 'Valued Customer',
+        phone: customerPhone,
+        address: customerAddress || '',
+        measurements: measurements || {}
+      });
+      await customer.save();
+    } else if (customer && measurements) {
+      customer.measurements = { ...customer.measurements, ...measurements };
+      await customer.save();
+    }
+
+    const orderData = {
+      ...req.body,
+      customer: customer ? customer._id : null,
+      customerName: customerName || (customer ? customer.name : 'Customer'),
+      customerPhone: customerPhone || (customer ? customer.phone : '0000000000'),
+    };
+
+    const order = new Order(orderData);
     await order.save();
     res.status(201).json(order);
   } catch (error) {
+    console.error("Order creation error:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -16,13 +42,12 @@ router.post('/', async (req, res) => {
 // Get all orders (for Admin / Master)
 router.get('/', async (req, res) => {
   try {
-    // Populate references to show detailed data instead of just IDs
     const orders = await Order.find()
       .populate('customer')
-      .populate('products.product')
       .populate('assignedMaster', 'name')
       .populate('assignedTailor', 'name')
-      .populate('assignedHandworker', 'name');
+      .populate('assignedHandworker', 'name')
+      .sort({ createdAt: -1 });
     res.json(orders);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -32,9 +57,7 @@ router.get('/', async (req, res) => {
 // Get specific order by ID
 router.get('/:id', async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id)
-      .populate('customer')
-      .populate('products.product');
+    const order = await Order.findById(req.params.id).populate('customer');
     if (!order) return res.status(404).json({ message: 'Order not found' });
     res.json(order);
   } catch (error) {
@@ -42,7 +65,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Update order (status change, assigning to master/tailor/handworker)
+// Update order
 router.put('/:id', async (req, res) => {
   try {
     const order = await Order.findByIdAndUpdate(req.params.id, req.body, { new: true });

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/services/leave_service.dart';
 
 class LeaveRequestScreen extends StatefulWidget {
   const LeaveRequestScreen({super.key});
@@ -9,16 +11,58 @@ class LeaveRequestScreen extends StatefulWidget {
 
 class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
   String _leaveType = 'Casual Leave';
-  final _fromDateController = TextEditingController(text: '22 May 2026');
-  final _toDateController = TextEditingController(text: '23 May 2026');
-  final _reasonController = TextEditingController(text: 'Family Function');
+  final _fromDateController = TextEditingController(text: '2026-05-22');
+  final _toDateController = TextEditingController(text: '2026-05-23');
+  final _reasonController = TextEditingController(text: 'Family Event');
+  bool _isSubmitting = false;
+
+  Future<void> _submitLeaveRequest() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('user_id') ?? '';
+
+    if (userId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please login to submit leave')));
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    final res = await LeaveService.applyLeave(
+      userId: userId,
+      leaveType: _leaveType,
+      fromDate: _fromDateController.text,
+      toDate: _toDateController.text,
+      noOfDays: 2,
+      reason: _reasonController.text,
+    );
+
+    setState(() => _isSubmitting = false);
+
+    if (res['success']) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Leave request submitted to live backend!'), backgroundColor: Color(0xFF16A34A)),
+        );
+        Navigator.pop(context);
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(res['message'] ?? 'Submission failed'), backgroundColor: Colors.redAccent),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    const goldColor = Color(0xFFD4AF37);
+    const darkText = Color(0xFF121212);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F9),
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Leave Request', style: TextStyle(color: Color(0xFF0F2042), fontWeight: FontWeight.bold)),
+        title: const Text('Leave Request', style: TextStyle(color: darkText, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0.5,
       ),
@@ -34,23 +78,23 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
+                border: Border.all(color: goldColor.withValues(alpha: 0.3)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: const [
-                  Text('Casual Leave Balance', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
-                  Text('12 Days >', style: TextStyle(color: Color(0xFF16A34A), fontWeight: FontWeight.bold)),
+                  Text('Casual Leave Balance', style: TextStyle(color: Color(0xFF6B7280), fontWeight: FontWeight.w500)),
+                  Text('12 Days Available', style: TextStyle(color: Color(0xFF16A34A), fontWeight: FontWeight.bold)),
                 ],
               ),
             ),
             const SizedBox(height: 24),
 
             // Form
-            const Text('Leave Type', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F2042))),
+            const Text('Leave Type', style: TextStyle(fontWeight: FontWeight.bold, color: darkText)),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: _leaveType,
+              initialValue: _leaveType,
               decoration: const InputDecoration(fillColor: Colors.white, filled: true),
               items: const [
                 DropdownMenuItem(value: 'Casual Leave', child: Text('Casual Leave')),
@@ -67,9 +111,9 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('From Date', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F2042))),
+                      const Text('From Date', style: TextStyle(fontWeight: FontWeight.bold, color: darkText)),
                       const SizedBox(height: 8),
-                      TextField(controller: _fromDateController, decoration: const InputDecoration(prefixIcon: Icon(Icons.calendar_today, size: 18))),
+                      TextField(controller: _fromDateController, decoration: const InputDecoration(prefixIcon: Icon(Icons.calendar_today, size: 18, color: goldColor))),
                     ],
                   ),
                 ),
@@ -78,9 +122,9 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('To Date', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F2042))),
+                      const Text('To Date', style: TextStyle(fontWeight: FontWeight.bold, color: darkText)),
                       const SizedBox(height: 8),
-                      TextField(controller: _toDateController, decoration: const InputDecoration(prefixIcon: Icon(Icons.calendar_today, size: 18))),
+                      TextField(controller: _toDateController, decoration: const InputDecoration(prefixIcon: Icon(Icons.calendar_today, size: 18, color: goldColor))),
                     ],
                   ),
                 ),
@@ -88,41 +132,12 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
             ),
             const SizedBox(height: 16),
 
-            const Text('No. Days', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F2042))),
-            const SizedBox(height: 8),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(12)),
-              child: const Text('2 Days', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F2042))),
-            ),
-            const SizedBox(height: 16),
-
-            const Text('Reason', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F2042))),
+            const Text('Reason', style: TextStyle(fontWeight: FontWeight.bold, color: darkText)),
             const SizedBox(height: 8),
             TextField(
               controller: _reasonController,
               maxLines: 3,
               decoration: const InputDecoration(hintText: 'Enter reason for leave...'),
-            ),
-            const SizedBox(height: 16),
-
-            const Text('Supporting Document (Optional)', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F2042))),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFCBD5E1)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  OutlinedButton(onPressed: () {}, child: const Text('Choose File')),
-                  const Text('No file chosen', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
-                ],
-              ),
             ),
             const SizedBox(height: 32),
 
@@ -130,17 +145,15 @@ class _LeaveRequestScreenState extends State<LeaveRequestScreen> {
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Leave request submitted!'), backgroundColor: Color(0xFF16A34A)),
-                  );
-                },
+                onPressed: _isSubmitting ? null : _submitLeaveRequest,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF16A34A),
+                  backgroundColor: goldColor,
+                  foregroundColor: darkText,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text('Submit Request', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                child: _isSubmitting
+                    ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: darkText, strokeWidth: 2))
+                    : const Text('SUBMIT REQUEST', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             )
           ],

@@ -18,12 +18,25 @@ class AuthService {
         await prefs.setString('jwt_token', token);
         await prefs.setString('user_role', data['user']['role']);
         await prefs.setString('user_id', data['user']['id']);
+        await prefs.setString('user_name', data['user']['name'] ?? 'Employee');
         
         return {'success': true, 'data': data};
       } else {
         final error = jsonDecode(response.body);
         return {'success': false, 'message': error['message']};
       }
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  static Future<Map<String, dynamic>> updateProfile(String userId, Map<String, dynamic> updateData) async {
+    try {
+      final response = await ApiClient.put('/auth/profile/$userId', updateData);
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': jsonDecode(response.body)};
+      }
+      return {'success': false, 'message': 'Failed to update profile'};
     } catch (e) {
       return {'success': false, 'message': e.toString()};
     }

@@ -10,8 +10,19 @@ class CustomerService {
       }
       return [];
     } catch (e) {
-      print(e);
       return [];
+    }
+  }
+
+  static Future<Map<String, dynamic>?> findCustomerByPhone(String phone) async {
+    try {
+      final response = await ApiClient.get('/customers/find/$phone');
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      return null;
     }
   }
 

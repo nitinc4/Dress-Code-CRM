@@ -24,6 +24,9 @@ class _AdminNavWrapperState extends State<AdminNavWrapper> {
 
   @override
   Widget build(BuildContext context) {
+    const goldColor = Color(0xFFD4AF37);
+    const darkText = Color(0xFF121212);
+
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
@@ -36,8 +39,8 @@ class _AdminNavWrapperState extends State<AdminNavWrapper> {
             MaterialPageRoute(builder: (_) => const OrderFlowScreen()),
           );
         },
-        backgroundColor: const Color(0xFF0F2042),
-        child: const Icon(Icons.add, color: Colors.white, size: 28),
+        backgroundColor: goldColor,
+        child: const Icon(Icons.add, color: darkText, size: 28),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
@@ -62,6 +65,7 @@ class _AdminNavWrapperState extends State<AdminNavWrapper> {
   }
 
   Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label) {
+    const goldColor = Color(0xFFD4AF37);
     final isSelected = _currentIndex == index;
     return InkWell(
       onTap: () => setState(() => _currentIndex = index),
@@ -70,7 +74,7 @@ class _AdminNavWrapperState extends State<AdminNavWrapper> {
         children: [
           Icon(
             isSelected ? activeIcon : icon,
-            color: isSelected ? const Color(0xFF2563EB) : const Color(0xFF64748B),
+            color: isSelected ? goldColor : const Color(0xFF6B7280),
             size: 22,
           ),
           const SizedBox(height: 2),
@@ -79,7 +83,7 @@ class _AdminNavWrapperState extends State<AdminNavWrapper> {
             style: TextStyle(
               fontSize: 11,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected ? const Color(0xFF2563EB) : const Color(0xFF64748B),
+              color: isSelected ? goldColor : const Color(0xFF6B7280),
             ),
           ),
         ],

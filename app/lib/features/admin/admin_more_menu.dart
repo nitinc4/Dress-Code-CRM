@@ -16,23 +16,26 @@ class AdminMoreMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const goldColor = Color(0xFFD4AF37);
+    const darkText = Color(0xFF121212);
+
     final menuItems = [
-      {'title': 'Inventory', 'icon': Icons.inventory_2_outlined, 'color': const Color(0xFF2563EB)},
-      {'title': 'Sales', 'icon': Icons.trending_up_outlined, 'color': const Color(0xFF16A34A)},
-      {'title': 'Purchase', 'icon': Icons.shopping_bag_outlined, 'color': const Color(0xFFD97706)},
-      {'title': 'Finance', 'icon': Icons.account_balance_wallet_outlined, 'color': const Color(0xFF7C3AED)},
-      {'title': 'Approvals', 'icon': Icons.verified_outlined, 'color': const Color(0xFF0284C7)},
-      {'title': 'Reports', 'icon': Icons.bar_chart_outlined, 'color': const Color(0xFFEC4899)},
-      {'title': 'HR & Staff', 'icon': Icons.people_outline, 'color': const Color(0xFF059669)},
-      {'title': 'Branches', 'icon': Icons.storefront_outlined, 'color': const Color(0xFFEA580C)},
-      {'title': 'Fabric Rolls', 'icon': Icons.texture_outlined, 'color': const Color(0xFF4F46E5)},
-      {'title': 'Settings', 'icon': Icons.settings_outlined, 'color': const Color(0xFF64748B)},
+      {'title': 'Inventory', 'icon': Icons.inventory_2_outlined},
+      {'title': 'Sales', 'icon': Icons.trending_up_outlined},
+      {'title': 'Purchase', 'icon': Icons.shopping_bag_outlined},
+      {'title': 'Finance', 'icon': Icons.account_balance_wallet_outlined},
+      {'title': 'Approvals', 'icon': Icons.verified_outlined},
+      {'title': 'Reports', 'icon': Icons.bar_chart_outlined},
+      {'title': 'HR & Staff', 'icon': Icons.people_outline},
+      {'title': 'Branches', 'icon': Icons.storefront_outlined},
+      {'title': 'Fabric Rolls', 'icon': Icons.texture_outlined},
+      {'title': 'Settings', 'icon': Icons.settings_outlined},
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F9),
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('ERP Management Suite', style: TextStyle(color: Color(0xFF0F2042), fontWeight: FontWeight.bold)),
+        title: const Text('ERP Management Suite', style: TextStyle(color: darkText, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0.5,
       ),
@@ -57,23 +60,23 @@ class AdminMoreMenu extends StatelessWidget {
                 return InkWell(
                   onTap: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Opening ${item['title']} module...')),
+                      SnackBar(content: Text('Opening ${item['title']} module...'), backgroundColor: goldColor),
                     );
                   },
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      border: Border.all(color: const Color(0xFFE5E7EB)),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(item['icon'] as IconData, size: 28, color: item['color'] as Color),
+                        Icon(item['icon'] as IconData, size: 28, color: goldColor),
                         const SizedBox(height: 8),
                         Text(
                           item['title'] as String,
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0F2042)),
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: darkText),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -89,9 +92,9 @@ class AdminMoreMenu extends StatelessWidget {
               child: ElevatedButton.icon(
                 onPressed: () => _logout(context),
                 icon: const Icon(Icons.logout, color: Colors.white),
-                label: const Text('Log Out', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                label: const Text('LOG OUT', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFDC2626),
+                  backgroundColor: Colors.redAccent,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),

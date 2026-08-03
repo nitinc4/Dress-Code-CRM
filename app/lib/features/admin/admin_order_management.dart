@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/services/order_service.dart';
 
 class AdminOrderManagement extends StatefulWidget {
   const AdminOrderManagement({super.key});
@@ -9,8 +10,33 @@ class AdminOrderManagement extends StatefulWidget {
 
 class _AdminOrderManagementState extends State<AdminOrderManagement> {
   String _selectedFilter = 'All Orders';
+  List<dynamic> _orders = [];
+  bool _isLoading = true;
 
-  void _showOrderTimelineModal(BuildContext context, String orderId) {
+  @override
+  void initState() {
+    super.initState();
+    _fetchOrders();
+  }
+
+  Future<void> _fetchOrders() async {
+    final list = await OrderService.getOrders();
+    if (mounted) {
+      setState(() {
+        _orders = list;
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _showOrderTimelineModal(BuildContext context, Map<String, dynamic> order) {
+    const goldColor = Color(0xFFD4AF37);
+    const darkText = Color(0xFF121212);
+
+    final String orderId = order['_id'] != null ? "ORD-${order['_id'].toString().substring(0, 6).toUpperCase()}" : "ORD-NEW";
+    final String customerName = order['customerName'] ?? order['customer']?['name'] ?? 'Walk-in Customer';
+    final String status = order['status'] ?? 'pending';
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -32,44 +58,42 @@ class _AdminOrderManagementState extends State<AdminOrderManagement> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(orderId, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0F2042))),
-                      const Text('ABC Fashion Pvt Ltd | 500 Pcs', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+                      Text(orderId, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: darkText)),
+                      Text('$customerName | Total: \$${order['totalCost'] ?? 0}', style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
                     ],
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(14)),
-                    child: const Text('In Production', style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.bold, fontSize: 12)),
+                    decoration: BoxDecoration(color: const Color(0xFFFEF3C7), borderRadius: BorderRadius.circular(14)),
+                    child: Text(status.toUpperCase(), style: const TextStyle(color: Color(0xFFD97706), fontWeight: FontWeight.bold, fontSize: 12)),
                   )
                 ],
               ),
               const SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text('Order Date: 19 May 2026', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                  Text('Delivery: 29 May 2026', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                  Text('Priority: HIGH', style: TextStyle(fontSize: 12, color: Color(0xFFDC2626), fontWeight: FontWeight.bold)),
+                children: [
+                  Text('Priority: ${(order['priority'] ?? 'Normal').toString().toUpperCase()}', style: const TextStyle(fontSize: 12, color: darkText, fontWeight: FontWeight.bold)),
+                  Text('Payment: ${(order['paymentStatus'] ?? 'pending').toString().toUpperCase()}', style: const TextStyle(fontSize: 12, color: goldColor, fontWeight: FontWeight.bold)),
                 ],
               ),
               const Divider(height: 24),
 
-              const Text('Production Timeline', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F2042))),
+              const Text('Production Stage Timeline', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: darkText)),
               const SizedBox(height: 16),
 
               Expanded(
                 child: ListView(
                   physics: const BouncingScrollPhysics(),
                   children: [
-                    _buildTimelineStep('Order Confirmed', '19 May 2026, 09:30 AM', true, isFirst: true),
-                    _buildTimelineStep('Measurement Taken', '19 May 2026, 11:15 AM', true),
-                    _buildTimelineStep('Fabric Issued', '19 May 2026, 02:30 PM', true),
-                    _buildTimelineStep('Cutting Complete', '20 May 2026, 09:00 AM', true),
-                    _buildTimelineStep('Stitching (In Progress)', '20 May 2026, Active', false, isCurrent: true),
-                    _buildTimelineStep('Quality Control (QC)', 'Pending', false),
-                    _buildTimelineStep('Trial Fitting', 'Pending', false),
-                    _buildTimelineStep('Packing', 'Pending', false),
-                    _buildTimelineStep('Dispatch & Delivery', 'Pending', false, isLast: true),
+                    _buildTimelineStep('Order Confirmed', 'System Logged', true, isFirst: true),
+                    _buildTimelineStep('Measurement Recorded', 'Customer Specs Added', true),
+                    _buildTimelineStep('Fabric Issued', order['fabricDetails']?['color'] ?? 'Standard Material', true),
+                    _buildTimelineStep('Cutting Stage', 'Assigned to Master', status == 'In Production'),
+                    _buildTimelineStep('Stitching Stage', 'Assigned to Tailor', status == 'In Production', isCurrent: status == 'In Production'),
+                    _buildTimelineStep('Quality Control (QC)', 'Pending Inspection', status == 'completed'),
+                    _buildTimelineStep('Trial Fitting', 'Pending Customer Trial', status == 'completed'),
+                    _buildTimelineStep('Dispatch & Delivery', 'Pending Ready', status == 'completed', isLast: true),
                   ],
                 ),
               )
@@ -82,10 +106,13 @@ class _AdminOrderManagementState extends State<AdminOrderManagement> {
 
   @override
   Widget build(BuildContext context) {
+    const goldColor = Color(0xFFD4AF37);
+    const darkText = Color(0xFF121212);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F9),
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Order Management', style: TextStyle(color: Color(0xFF0F2042), fontWeight: FontWeight.bold)),
+        title: const Text('Order Management', style: TextStyle(color: darkText, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0.5,
       ),
@@ -110,12 +137,12 @@ class _AdminOrderManagementState extends State<AdminOrderManagement> {
                       selected: isSelected,
                       label: Text(filter),
                       labelStyle: TextStyle(
-                        color: isSelected ? Colors.white : const Color(0xFF64748B),
+                        color: isSelected ? darkText : const Color(0xFF6B7280),
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                         fontSize: 13,
                       ),
-                      selectedColor: const Color(0xFF0F2042),
-                      backgroundColor: const Color(0xFFF1F5F9),
+                      selectedColor: goldColor,
+                      backgroundColor: const Color(0xFFFAFAFA),
                       onSelected: (val) {
                         setState(() => _selectedFilter = filter);
                       },
@@ -128,33 +155,44 @@ class _AdminOrderManagementState extends State<AdminOrderManagement> {
 
           // Orders List
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              physics: const BouncingScrollPhysics(),
-              children: [
-                _buildOrderItem(context, 'ORD-2026-0125', 'ABC Fashion Pvt Ltd', '500 Pcs • Men\'s Formal Shirt', 'In Production', const Color(0xFF2563EB), const Color(0xFFEFF6FF), '19 May 2026'),
-                _buildOrderItem(context, 'ORD-2026-0124', 'XYZ Garments', '300 Pcs • 18 May 2026', 'Trial Pending', const Color(0xFFD97706), const Color(0xFFFEF3C7), '18 May 2026'),
-                _buildOrderItem(context, 'ORD-2026-0123', 'Style Hub', '200 Pcs • 18 May 2026', 'QC Pending', const Color(0xFF7C3AED), const Color(0xFFF3E8FF), '18 May 2026'),
-                _buildOrderItem(context, 'ORD-2026-0122', 'Trendy Wear', '400 Pcs • 17 May 2026', 'Ready for Delivery', const Color(0xFF16A34A), const Color(0xFFDCFCE7), '17 May 2026'),
-                _buildOrderItem(context, 'ORD-2026-0120', 'Cool Styles', '150 Pcs • 16 May 2026', 'Canceled', const Color(0xFFDC2626), const Color(0xFFFEE2E2), '16 May 2026'),
-              ],
-            ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: goldColor))
+                : RefreshIndicator(
+                    onRefresh: _fetchOrders,
+                    color: goldColor,
+                    child: _orders.isEmpty
+                        ? const Center(child: Text('No orders found in database.', style: TextStyle(color: Color(0xFF6B7280))))
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            itemCount: _orders.length,
+                            itemBuilder: (context, index) {
+                              final order = _orders[index];
+                              final String orderId = order['_id'] != null ? "ORD-${order['_id'].toString().substring(0, 6).toUpperCase()}" : "ORD-${index + 100}";
+                              final String client = order['customerName'] ?? order['customer']?['name'] ?? 'Walk-in Customer';
+                              final String status = order['status'] ?? 'pending';
+                              final String cost = "\$${order['totalCost'] ?? 0}";
+
+                              return _buildOrderItem(context, order, orderId, client, 'Total Cost: $cost', status, goldColor);
+                            },
+                          ),
+                  ),
           )
         ],
       ),
     );
   }
 
-  Widget _buildOrderItem(BuildContext context, String id, String client, String details, String status, Color statusColor, Color bgColor, String date) {
+  Widget _buildOrderItem(BuildContext context, Map<String, dynamic> orderData, String id, String client, String details, String status, Color goldColor) {
     return GestureDetector(
-      onTap: () => _showOrderTimelineModal(context, id),
+      onTap: () => _showOrderTimelineModal(context, orderData),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -162,18 +200,18 @@ class _AdminOrderManagementState extends State<AdminOrderManagement> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(id, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Color(0xFF0F2042))),
+                Text(id, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Color(0xFF121212))),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(10)),
-                  child: Text(status, style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 12)),
+                  decoration: BoxDecoration(color: const Color(0xFFFEF3C7), borderRadius: BorderRadius.circular(10)),
+                  child: Text(status.toUpperCase(), style: const TextStyle(color: Color(0xFFD97706), fontWeight: FontWeight.bold, fontSize: 12)),
                 )
               ],
             ),
             const SizedBox(height: 6),
-            Text(client, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F2042))),
+            Text(client, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF121212))),
             const SizedBox(height: 2),
-            Text(details, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+            Text(details, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
           ],
         ),
       ),
@@ -181,6 +219,8 @@ class _AdminOrderManagementState extends State<AdminOrderManagement> {
   }
 
   Widget _buildTimelineStep(String title, String subtitle, bool isDone, {bool isCurrent = false, bool isFirst = false, bool isLast = false}) {
+    const goldColor = Color(0xFFD4AF37);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -191,7 +231,7 @@ class _AdminOrderManagementState extends State<AdminOrderManagement> {
               height: 20,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isDone ? const Color(0xFF16A34A) : (isCurrent ? const Color(0xFF2563EB) : const Color(0xFFCBD5E1)),
+                color: isDone ? const Color(0xFF16A34A) : (isCurrent ? goldColor : const Color(0xFFCBD5E1)),
               ),
               child: Icon(
                 isDone ? Icons.check : (isCurrent ? Icons.circle : Icons.circle_outlined),
@@ -203,7 +243,7 @@ class _AdminOrderManagementState extends State<AdminOrderManagement> {
               Container(
                 width: 2,
                 height: 36,
-                color: isDone ? const Color(0xFF16A34A) : const Color(0xFFE2E8F0),
+                color: isDone ? const Color(0xFF16A34A) : const Color(0xFFE5E7EB),
               ),
           ],
         ),
@@ -211,9 +251,9 @@ class _AdminOrderManagementState extends State<AdminOrderManagement> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: TextStyle(fontWeight: isCurrent || isDone ? FontWeight.bold : FontWeight.normal, color: isCurrent ? const Color(0xFF2563EB) : const Color(0xFF0F2042), fontSize: 14)),
+            Text(title, style: TextStyle(fontWeight: isCurrent || isDone ? FontWeight.bold : FontWeight.normal, color: isCurrent ? goldColor : const Color(0xFF121212), fontSize: 14)),
             const SizedBox(height: 2),
-            Text(subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+            Text(subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
             const SizedBox(height: 16),
           ],
         ),

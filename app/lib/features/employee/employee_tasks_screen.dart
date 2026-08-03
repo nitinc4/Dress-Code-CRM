@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/services/order_service.dart';
 
 class EmployeeTasksScreen extends StatefulWidget {
   const EmployeeTasksScreen({super.key});
@@ -9,266 +10,138 @@ class EmployeeTasksScreen extends StatefulWidget {
 
 class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  int _completedPcs = 65;
-  final int _targetPcs = 120;
+  List<dynamic> _orders = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _fetchOrders();
   }
 
-  void _showUpdateProgressModal(BuildContext context) {
-    int tempProgress = _completedPcs;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 24,
-                right: 24,
-                top: 24,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Update Work Progress', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F2042))),
-                      IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  const Text('WO-2026-1254 - Men\'s Formal Shirt', style: TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 20),
-                  Text('Completed Quantity: $tempProgress / $_targetPcs Pcs', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  Slider(
-                    value: tempProgress.toDouble(),
-                    min: 0,
-                    max: _targetPcs.toDouble(),
-                    divisions: _targetPcs,
-                    activeColor: const Color(0xFF2563EB),
-                    label: '$tempProgress Pcs',
-                    onChanged: (val) {
-                      setModalState(() {
-                        tempProgress = val.round();
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          _completedPcs = tempProgress;
-                        });
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Progress updated successfully!'), backgroundColor: Color(0xFF16A34A)),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2563EB),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: const Text('Save Progress', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    ),
-                  )
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
+  Future<void> _fetchOrders() async {
+    final list = await OrderService.getOrders();
+    if (mounted) {
+      setState(() {
+        _orders = list;
+        _isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final double percent = (_completedPcs / _targetPcs).clamp(0.0, 1.0);
+    const goldColor = Color(0xFFD4AF37);
+    const darkText = Color(0xFF121212);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F9),
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Tasks & Work Orders', style: TextStyle(color: Color(0xFF0F2042), fontWeight: FontWeight.bold)),
+        title: const Text('Tasks & Work Orders', style: TextStyle(color: darkText, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0.5,
         bottom: TabBar(
           controller: _tabController,
-          labelColor: const Color(0xFF2563EB),
-          unselectedLabelColor: const Color(0xFF64748B),
-          indicatorColor: const Color(0xFF2563EB),
+          labelColor: goldColor,
+          unselectedLabelColor: const Color(0xFF6B7280),
+          indicatorColor: goldColor,
           indicatorWeight: 3,
-          tabs: const [
-            Tab(text: 'Pending (2)'),
-            Tab(text: 'Work Orders'),
+          tabs: [
+            Tab(text: 'Assigned Work (${_orders.length})'),
+            const Tab(text: 'Completed Orders'),
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          // Pending Tasks List
-          ListView(
-            padding: const EdgeInsets.all(16),
-            physics: const BouncingScrollPhysics(),
-            children: [
-              // Card 1
-              _buildTaskCard(
-                context: context,
-                id: 'WO-2026-1254',
-                status: 'In Progress',
-                statusColor: const Color(0xFF2563EB),
-                bgColor: const Color(0xFFEFF6FF),
-                product: 'Men\'s Formal Shirt',
-                department: 'Stitching - Line A',
-                target: _targetPcs,
-                completed: _completedPcs,
-                percent: percent,
-                due: '19 May 06:00 PM',
-                showUpdateBtn: true,
-              ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: goldColor))
+          : TabBarView(
+              controller: _tabController,
+              children: [
+                // Live Assigned Work List
+                RefreshIndicator(
+                  onRefresh: _fetchOrders,
+                  color: goldColor,
+                  child: _orders.isEmpty
+                      ? const Center(child: Text('No active work orders assigned.', style: TextStyle(color: Color(0xFF6B7280))))
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: _orders.length,
+                          itemBuilder: (context, index) {
+                            final order = _orders[index];
+                            final status = order['status'] ?? 'pending';
+                            final customerName = order['customerName'] ?? order['customer']?['name'] ?? 'Walk-in Customer';
+                            final totalCost = order['totalCost'] ?? order['totalAmount'] ?? 0;
 
-              // Card 2
-              _buildTaskCard(
-                context: context,
-                id: 'WO-2026-1255',
-                status: 'Pending',
-                statusColor: const Color(0xFFD97706),
-                bgColor: const Color(0xFFFEF3C7),
-                product: 'Logo Embroidery',
-                department: 'Target: 80 Pcs',
-                target: 80,
-                completed: 0,
-                percent: 0.0,
-                due: '19 May 08:00 PM',
-                showUpdateBtn: false,
-              ),
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 16),
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: const Color(0xFFE5E7EB)),
+                                boxShadow: [
+                                  BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 2))
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.assignment, size: 18, color: goldColor),
+                                          const SizedBox(width: 8),
+                                          Text('ORDER-${index + 101}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: darkText)),
+                                        ],
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(color: const Color(0xFFFEF3C7), borderRadius: BorderRadius.circular(12)),
+                                        child: Text(status.toUpperCase(), style: const TextStyle(color: Color(0xFFD97706), fontWeight: FontWeight.bold, fontSize: 12)),
+                                      )
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(customerName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: darkText)),
+                                  const SizedBox(height: 4),
+                                  Text('Total Bill: \$$totalCost', style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
+                                  const SizedBox(height: 14),
 
-              // Card 3
-              _buildTaskCard(
-                context: context,
-                id: 'WO-2026-1251',
-                status: 'Completed',
-                statusColor: const Color(0xFF16A34A),
-                bgColor: const Color(0xFFDCFCE7),
-                product: 'Stitching - Line B',
-                department: '100 Pcs',
-                target: 100,
-                completed: 100,
-                percent: 1.0,
-                due: 'Completed',
-                showUpdateBtn: false,
-              ),
-            ],
-          ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text('Priority: Normal', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('Order Status Updated'), backgroundColor: goldColor),
+                                          );
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: goldColor,
+                                          foregroundColor: darkText,
+                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                        ),
+                                        child: const Text('Update Status', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                      )
+                                    ],
+                                  )
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                ),
 
-          // All Work Orders View
-          const Center(child: Text('All Work Orders History', style: TextStyle(color: Color(0xFF64748B)))),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTaskCard({
-    required BuildContext context,
-    required String id,
-    required String status,
-    required Color statusColor,
-    required Color bgColor,
-    required String product,
-    required String department,
-    required int target,
-    required int completed,
-    required double percent,
-    required String due,
-    required bool showUpdateBtn,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.assignment, size: 18, color: Color(0xFF2563EB)),
-                  const SizedBox(width: 8),
-                  Text(id, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F2042))),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(12)),
-                child: Text(status, style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 12)),
-              )
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(product, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F2042))),
-          const SizedBox(height: 4),
-          Text('Department: $department', style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
-          const SizedBox(height: 14),
-
-          // Quantity Progress
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Completed: $completed / $target Pcs', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F2042))),
-              Text('${(percent * 100).toInt()}%', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: statusColor)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(
-              value: percent,
-              minHeight: 8,
-              backgroundColor: const Color(0xFFF1F5F9),
-              valueColor: AlwaysStoppedAnimation<Color>(statusColor),
+                // Completed Orders View
+                const Center(child: Text('No completed work orders yet.', style: TextStyle(color: Color(0xFF6B7280)))),
+              ],
             ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Due: $due', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-              if (showUpdateBtn)
-                ElevatedButton(
-                  onPressed: () => _showUpdateProgressModal(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  child: const Text('Update Progress', style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold)),
-                )
-            ],
-          )
-        ],
-      ),
     );
   }
 }

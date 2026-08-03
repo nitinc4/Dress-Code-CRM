@@ -13,21 +13,59 @@ class OrderProvider extends ChangeNotifier {
   double budget = 0.0;
   String orderPriority = 'normal';
 
-  // Step 3: Fabric & Design
-  String fabricColor = '';
-  String fabricPattern = '';
-  String fabricQuality = '';
-  String garmentCategory = '';
-  String embroideryDesign = '';
+  // Step 3: Fabric & Garment Selection (Men's Catalog)
+  Map<String, dynamic>? selectedFabric;
+  String fabricColor = 'Navy Blue';
+  String fabricPattern = 'Solid Twill';
+  String fabricFinish = 'Matte Smooth';
+  double fabricMeters = 3.5;
+
+  Map<String, dynamic>? selectedGarment;
+  Map<String, dynamic>? selectedAddon;
 
   // Step 4: Measurements & Addons
-  Map<String, double> measurements = {};
-  String addons = '';
+  Map<String, double> measurements = {
+    'shoulder': 17.5,
+    'chest': 40.0,
+    'waist': 34.0,
+    'length': 30.0,
+  };
+  String customNotes = '';
 
-  // Step 5: Billing
-  double totalCost = 0.0;
+  // Step 5: Pricing Calculation Model
+  double laborHourlyRate = 15.0; // $15 / hr
+  double addonHourlyRate = 20.0; // $20 / hr
+
   double discount = 0.0;
-  String paymentStatus = 'pending'; // 'full', 'partial', 'pay_later'
+  String paymentStatus = 'pending';
+
+  // Calculated getters based on user specs formula:
+  // 1. Fabric Cost = pricePerMeter * meters
+  double get fabricCost {
+    final rate = (selectedFabric?['pricePerMeter'] as num?)?.toDouble() ?? 45.0;
+    return rate * fabricMeters;
+  }
+
+  // 2. Garment Labor Cost = baseHours * laborHourlyRate
+  double get garmentLaborCost {
+    final hours = (selectedGarment?['laborHours'] as num?)?.toDouble() ?? 8.0;
+    return hours * laborHourlyRate;
+  }
+
+  // 3. Addon Cost = addonHours * addonHourlyRate
+  double get addonCost {
+    final hours = (selectedAddon?['addonHours'] as num?)?.toDouble() ?? 3.0;
+    return hours * addonHourlyRate;
+  }
+
+  // 4. Total Cost = Fabric Cost + Garment Labor Cost + Addon Cost
+  double get totalCalculatedCost {
+    return fabricCost + garmentLaborCost + addonCost;
+  }
+
+  double get finalBill {
+    return (totalCalculatedCost - discount).clamp(0.0, double.infinity);
+  }
 
   void calculatePriority() {
     if (eventDate == null) return;
@@ -44,29 +82,36 @@ class OrderProvider extends ChangeNotifier {
 
   Future<bool> submitOrder() async {
     final orderData = {
-      // Typically, we would map to actual Customer ID and Product IDs here.
-      // For this wizard prototype, we send the aggregated data.
-      'customerName': customerName,
-      'customerPhone': customerPhone,
+      'customerName': customerName.isNotEmpty ? customerName : 'Valued Customer',
+      'customerPhone': customerPhone.isNotEmpty ? customerPhone : '9999999999',
+      'customerAddress': customerAddress.isNotEmpty ? customerAddress : 'Main Store',
       'eventDate': eventDate?.toIso8601String(),
       'priority': orderPriority,
       'fabricDetails': {
+        'name': selectedFabric?['name'] ?? 'Italian Wool Twill',
         'color': fabricColor,
         'pattern': fabricPattern,
-        'quality': fabricQuality,
+        'finish': fabricFinish,
+        'meters': fabricMeters,
+        'pricePerMeter': selectedFabric?['pricePerMeter'] ?? 45.0,
       },
-      'garmentCategory': garmentCategory,
-      'design': embroideryDesign,
+      'garmentCategory': selectedGarment?['name'] ?? 'Men\'s 3-Piece Suit',
+      'design': selectedAddon?['name'] ?? 'Gold Zardozi Embroidery',
+      'pricingBreakdown': {
+        'fabricCost': fabricCost,
+        'garmentLaborCost': garmentLaborCost,
+        'addonCost': addonCost,
+        'totalCalculated': totalCalculatedCost,
+        'discount': discount,
+        'finalBill': finalBill,
+      },
       'measurements': measurements,
-      'addons': addons,
-      'totalCost': totalCost,
+      'addons': customNotes,
+      'totalCost': finalBill,
       'discount': discount,
       'paymentStatus': paymentStatus,
     };
-    
-    // Using existing createOrder API format 
-    // (Note: Backend may need schema updates to accept all these flat fields, 
-    // or this provider should assemble the exact schema we created).
+
     final result = await OrderService.createOrder(orderData);
     return result['success'] == true;
   }
