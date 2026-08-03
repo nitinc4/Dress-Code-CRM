@@ -2,9 +2,12 @@ const mongoose = require('mongoose');
 
 const customerSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  contact: { type: String, required: true },
-  measurements: { type: mongoose.Schema.Types.Mixed }, // Flexible schema for diverse measurements
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Sales rep who onboarded
+  contact: { type: String },
+  phone: { type: String },
+  address: { type: String },
+  email: { type: String },
+  measurements: { type: mongoose.Schema.Types.Mixed },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   createdAt: { type: Date, default: Date.now }
 });
 

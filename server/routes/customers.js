@@ -16,7 +16,9 @@ router.post('/', async (req, res) => {
 // Get customer by phone number
 router.get('/find/:phone', async (req, res) => {
   try {
-    const customer = await Customer.findOne({ phone: req.params.phone });
+    const customer = await Customer.findOne({
+      $or: [{ phone: req.params.phone }, { contact: req.params.phone }]
+    });
     if (!customer) return res.status(404).json({ message: 'Customer not found' });
     res.json(customer);
   } catch (error) {

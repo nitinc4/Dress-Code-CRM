@@ -11,10 +11,13 @@ router.post('/', async (req, res) => {
     const { customerName, customerPhone, customerAddress, measurements } = req.body;
 
     // Find or create customer record
-    let customer = await Customer.findOne({ phone: customerPhone });
+    let customer = await Customer.findOne({
+      $or: [{ phone: customerPhone }, { contact: customerPhone }]
+    });
     if (!customer && customerPhone) {
       customer = new Customer({
         name: customerName || 'Valued Customer',
+        contact: customerPhone,
         phone: customerPhone,
         address: customerAddress || '',
         measurements: measurements || {}
