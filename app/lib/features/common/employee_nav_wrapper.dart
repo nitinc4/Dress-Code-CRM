@@ -9,6 +9,8 @@ import '../tailor/tailor_dashboard.dart';
 import '../hand_worker/hand_worker_dashboard.dart';
 import '../warehouse/warehouse_dashboard.dart';
 
+import '../cutting_master/cutting_master_dashboard.dart';
+
 class EmployeeNavWrapper extends StatefulWidget {
   final String role;
   const EmployeeNavWrapper({super.key, required this.role});
@@ -26,6 +28,8 @@ class _EmployeeNavWrapperState extends State<EmployeeNavWrapper> {
         return const SalesDashboard();
       case 'master':
         return const MasterDashboard();
+      case 'cutting_master':
+        return const CuttingMasterDashboard();
       case 'tailor':
         return const TailorDashboard();
       case 'hand_worker':

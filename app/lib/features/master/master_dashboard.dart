@@ -44,6 +44,29 @@ class _MasterDashboardState extends State<MasterDashboard> {
     }
   }
 
+  int _getEmployeeWorkload(String empId) {
+    int count = 0;
+    for (var order in _orders) {
+      if (['completed', 'delivery', 'sales'].contains(order['status'])) continue;
+      
+      final cm = order['assignedCuttingMaster'];
+      final tailor = order['assignedTailor'];
+      final hw = order['assignedHandworker'];
+      
+      if (cm != null && cm['_id'] == empId) count++;
+      else if (tailor != null && tailor['_id'] == empId) count++;
+      else if (hw != null && hw['_id'] == empId) count++;
+    }
+    return count;
+  }
+
+  String _getEmployeeStatusLabel(Map<String, dynamic> emp) {
+    if (emp['status'] == 'on_leave') return 'On Leave';
+    int load = _getEmployeeWorkload(emp['_id']);
+    if (load == 0) return 'Free';
+    return 'Busy (Load: $load)';
+  }
+
   Future<void> _updateStatus(String orderId, String status) async {
     final res = await OrderService.updateOrderStatus(orderId, status);
     if (res['success']) {
@@ -90,7 +113,7 @@ class _MasterDashboardState extends State<MasterDashboard> {
                     items: targetEmployees.map((emp) {
                       return DropdownMenuItem<String>(
                         value: emp['_id'] as String,
-                        child: Text('${emp['name']} (${emp['role']})'),
+                        child: Text('${emp['name']} - ${_getEmployeeStatusLabel(emp)}'),
                       );
                     }).toList(),
                     onChanged: (val) {
@@ -141,8 +164,11 @@ class _MasterDashboardState extends State<MasterDashboard> {
     const goldColor = Color(0xFFD4AF37);
     const darkText = Color(0xFF121212);
 
-    final tailors = _employees.where((e) => e['role'] == 'tailor' || e['role'] == 'hand_worker').toList();
     final activeOrders = _orders.where((o) => !['completed', 'sales', 'fabric_dispensing', 'delivery'].contains(o['status'])).toList();
+
+    int getFree(String role) => _employees.where((e) => e['role'] == role && e['status'] != 'on_leave' && _getEmployeeWorkload(e['_id']) == 0).length;
+    int getBusy(String role) => _employees.where((e) => e['role'] == role && e['status'] != 'on_leave' && _getEmployeeWorkload(e['_id']) > 0).length;
+    int getLeave(String role) => _employees.where((e) => e['role'] == role && e['status'] == 'on_leave').length;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -173,6 +199,28 @@ class _MasterDashboardState extends State<MasterDashboard> {
                       child: const Icon(Icons.design_services, color: goldColor),
                     )
                   ],
+                ),
+                const SizedBox(height: 24),
+
+                // Staff Summary
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(color: const Color(0xFFFAFAFA), borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFFE5E7EB))),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Staff Status Overview', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: darkText)),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _buildStaffStatCol('Cutting', getFree('cutting_master'), getBusy('cutting_master'), getLeave('cutting_master')),
+                          _buildStaffStatCol('Tailors', getFree('tailor'), getBusy('tailor'), getLeave('tailor')),
+                          _buildStaffStatCol('Handwork', getFree('hand_worker'), getBusy('hand_worker'), getLeave('hand_worker')),
+                        ],
+                      )
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 24),
 
@@ -239,6 +287,8 @@ class _MasterDashboardState extends State<MasterDashboard> {
                                     const SizedBox(height: 14),
 
                                     // Display assignments
+                                    if (order['assignedCuttingMaster'] != null)
+                                      Text('Cutting: ${order['assignedCuttingMaster']['name']}', style: const TextStyle(fontSize: 13)),
                                     if (order['assignedTailor'] != null)
                                       Text('Tailor: ${order['assignedTailor']['name']}', style: const TextStyle(fontSize: 13)),
                                     if (order['assignedHandworker'] != null)
@@ -252,30 +302,29 @@ class _MasterDashboardState extends State<MasterDashboard> {
                                         children: [
                                           Expanded(
                                             child: OutlinedButton(
-                                              onPressed: () => _showAssignModal(context, order, 'tailor', 'assignedTailor'),
-                                              child: const Text('Assign Tailor'),
+                                              onPressed: () => _showAssignModal(context, order, 'cutting_master', 'assignedCuttingMaster'),
+                                              style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 4)),
+                                              child: const Text('Assign CM', style: TextStyle(fontSize: 11)),
                                             ),
                                           ),
-                                          const SizedBox(width: 8),
+                                          const SizedBox(width: 4),
+                                          Expanded(
+                                            child: OutlinedButton(
+                                              onPressed: () => _showAssignModal(context, order, 'tailor', 'assignedTailor'),
+                                              style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 4)),
+                                              child: const Text('Assign Tlr', style: TextStyle(fontSize: 11)),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
                                           Expanded(
                                             child: OutlinedButton(
                                               onPressed: () => _showAssignModal(context, order, 'hand_worker', 'assignedHandworker'),
-                                              child: const Text('Assign HW'),
+                                              style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 4)),
+                                              child: const Text('Assign HW', style: TextStyle(fontSize: 11)),
                                             ),
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 8),
-                                      SizedBox(
-                                        width: double.infinity,
-                                        child: ElevatedButton(
-                                          onPressed: (order['assignedTailor'] != null && order['assignedHandworker'] != null) 
-                                              ? () => _updateStatus(order['_id'], 'hand_work')
-                                              : null,
-                                          style: ElevatedButton.styleFrom(backgroundColor: goldColor, foregroundColor: darkText),
-                                          child: const Text('Complete Cutting -> Hand-work'),
-                                        ),
-                                      )
                                     ] else if (status == 'trial') ...[
                                       Row(
                                         children: [
@@ -305,17 +354,24 @@ class _MasterDashboardState extends State<MasterDashboard> {
                                           child: const Text('Ready for Delivery'),
                                         ),
                                       )
-                                    ] else if (['hand_work', 'stitching', 'alterations'].contains(status)) ...[
+                                    ] else if (['cutting', 'hand_work', 'stitching', 'alterations'].contains(status)) ...[
                                       // Reassign button if worker is absent
                                       SizedBox(
                                         width: double.infinity,
                                         child: OutlinedButton(
                                           onPressed: () {
-                                            String targetRole = (status == 'hand_work') ? 'hand_worker' : 'tailor';
-                                            String targetField = (status == 'hand_work') ? 'assignedHandworker' : 'assignedTailor';
+                                            String targetRole = 'tailor';
+                                            String targetField = 'assignedTailor';
+                                            if (status == 'hand_work') {
+                                              targetRole = 'hand_worker';
+                                              targetField = 'assignedHandworker';
+                                            } else if (status == 'cutting') {
+                                              targetRole = 'cutting_master';
+                                              targetField = 'assignedCuttingMaster';
+                                            }
                                             _showAssignModal(context, order, targetRole, targetField);
                                           },
-                                          child: const Text('Reassign Worker (Temporary Override)'),
+                                          child: const Text('Reassign Worker (Override)'),
                                         ),
                                       )
                                     ]
@@ -329,6 +385,39 @@ class _MasterDashboardState extends State<MasterDashboard> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildStaffStatCol(String title, int free, int busy, int leave) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF6B7280))),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Container(width: 8, height: 8, decoration: const BoxDecoration(color: Color(0xFF16A34A), shape: BoxShape.circle)),
+            const SizedBox(width: 4),
+            Text('Free: $free', style: const TextStyle(fontSize: 12)),
+          ],
+        ),
+        const SizedBox(height: 2),
+        Row(
+          children: [
+            Container(width: 8, height: 8, decoration: const BoxDecoration(color: Color(0xFFF59E0B), shape: BoxShape.circle)),
+            const SizedBox(width: 4),
+            Text('Busy: $busy', style: const TextStyle(fontSize: 12)),
+          ],
+        ),
+        const SizedBox(height: 2),
+        Row(
+          children: [
+            Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle)),
+            const SizedBox(width: 4),
+            Text('Leave: $leave', style: const TextStyle(fontSize: 12)),
+          ],
+        ),
+      ],
     );
   }
 }

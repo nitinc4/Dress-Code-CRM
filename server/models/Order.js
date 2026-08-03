@@ -26,6 +26,7 @@ const orderSchema = new mongoose.Schema({
   assignedTailor: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   originalTailor: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   assignedHandworker: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  assignedCuttingMaster: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   createdAt: { type: Date, default: Date.now }
 });
 

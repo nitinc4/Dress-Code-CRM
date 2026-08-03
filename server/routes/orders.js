@@ -57,6 +57,7 @@ router.get('/', async (req, res) => {
       .populate('assignedTailor', 'name')
       .populate('originalTailor', 'name')
       .populate('assignedHandworker', 'name')
+      .populate('assignedCuttingMaster', 'name')
       .sort({ createdAt: -1 });
     res.json(orders);
   } catch (error) {

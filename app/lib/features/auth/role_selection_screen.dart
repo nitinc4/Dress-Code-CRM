@@ -10,6 +10,7 @@ class RoleSelectionScreen extends StatelessWidget {
       {'name': 'Admin', 'icon': Icons.admin_panel_settings, 'roleId': 'admin'},
       {'name': 'Sales', 'icon': Icons.point_of_sale, 'roleId': 'sales_rep'},
       {'name': 'Master', 'icon': Icons.design_services, 'roleId': 'master'},
+      {'name': 'Cutting Master', 'icon': Icons.content_cut, 'roleId': 'cutting_master'},
       {'name': 'Tailor', 'icon': Icons.cut, 'roleId': 'tailor'},
       {'name': 'Hand-worker', 'icon': Icons.handyman, 'roleId': 'hand_worker'},
       {'name': 'Warehouse', 'icon': Icons.warehouse, 'roleId': 'warehouse_manager'},

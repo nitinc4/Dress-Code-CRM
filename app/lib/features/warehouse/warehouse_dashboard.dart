@@ -96,7 +96,7 @@ class _WarehouseDashboardState extends State<WarehouseDashboard> {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: _fetchInventory,
+          onRefresh: _fetchData,
           color: goldColor,
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),

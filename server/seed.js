@@ -9,7 +9,8 @@ const users = [
   { name: 'Master 1', phone: '3000000000', password: 'password123', role: 'master' },
   { name: 'Tailor 1', phone: '4000000000', password: 'password123', role: 'tailor' },
   { name: 'Hand Worker 1', phone: '5000000000', password: 'password123', role: 'hand_worker' },
-  { name: 'Warehouse Mgr 1', phone: '6000000000', password: 'password123', role: 'warehouse_manager' }
+  { name: 'Warehouse Mgr 1', phone: '6000000000', password: 'password123', role: 'warehouse_manager' },
+  { name: 'Cutting Master 1', phone: '7000000000', password: 'password123', role: 'cutting_master' }
 ];
 
 async function seed() {
