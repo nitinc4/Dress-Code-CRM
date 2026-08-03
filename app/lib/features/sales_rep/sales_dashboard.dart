@@ -13,6 +13,8 @@ class SalesDashboard extends StatefulWidget {
 }
 
 class _SalesDashboardState extends State<SalesDashboard> {
+  List<dynamic> _trialOrders = [];
+  List<dynamic> _trial2Orders = [];
   List<dynamic> _deliveryOrders = [];
   bool _isLoading = true;
 
@@ -24,12 +26,30 @@ class _SalesDashboardState extends State<SalesDashboard> {
 
   Future<void> _fetchOrders() async {
     final allOrders = await OrderService.getOrders();
+    final trial = allOrders.where((o) => o['status'] == 'trial').toList();
+    final trial2 = allOrders.where((o) => o['status'] == 'trial_2').toList();
     final delivery = allOrders.where((o) => o['status'] == 'delivery').toList();
     if (mounted) {
       setState(() {
+        _trialOrders = trial;
+        _trial2Orders = trial2;
         _deliveryOrders = delivery;
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _updateStatus(String orderId, String status) async {
+    final res = await OrderService.updateOrderStatus(orderId, status);
+    if (res['success']) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Order status updated to ${status.replaceAll('_', ' ')}!'), backgroundColor: const Color(0xFF16A34A)));
+        _fetchOrders();
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res['message']), backgroundColor: Colors.red));
+      }
     }
   }
 
@@ -130,6 +150,89 @@ class _SalesDashboardState extends State<SalesDashboard> {
                 ),
               ),
               const SizedBox(height: 32),
+
+              // Trial Queue
+              if (_trialOrders.isNotEmpty) ...[
+                const Text('Trial Queue', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText)),
+                const SizedBox(height: 12),
+                ..._trialOrders.map((order) {
+                  final orderId = order['_id']?.substring(0, 8) ?? 'Unknown';
+                  final cName = order['customerName'] ?? 'Customer';
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))]
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Order #$orderId - $cName (${order['garmentCategory'] ?? 'Garment'})', style: const TextStyle(fontWeight: FontWeight.bold, color: darkText)),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => _updateStatus(order['_id'], 'alterations'),
+                                style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red)),
+                                child: const Text('Alterations'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: () => _updateStatus(order['_id'], 'trial_2'),
+                                style: ElevatedButton.styleFrom(backgroundColor: goldColor, foregroundColor: darkText),
+                                child: const Text('Approve Trial'),
+                              ),
+                            ),
+                          ],
+                        )
+                      ],
+                    ),
+                  );
+                }).toList(),
+                const SizedBox(height: 24),
+              ],
+
+              // Trial 2 Queue
+              if (_trial2Orders.isNotEmpty) ...[
+                const Text('Trial 2 Queue', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText)),
+                const SizedBox(height: 12),
+                ..._trial2Orders.map((order) {
+                  final orderId = order['_id']?.substring(0, 8) ?? 'Unknown';
+                  final cName = order['customerName'] ?? 'Customer';
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))]
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Order #$orderId - $cName (${order['garmentCategory'] ?? 'Garment'})', style: const TextStyle(fontWeight: FontWeight.bold, color: darkText)),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () => _updateStatus(order['_id'], 'delivery'),
+                            style: ElevatedButton.styleFrom(backgroundColor: goldColor, foregroundColor: darkText),
+                            child: const Text('Ready for Delivery'),
+                          ),
+                        )
+                      ],
+                    ),
+                  );
+                }).toList(),
+                const SizedBox(height: 24),
+              ],
 
               const Text('Ready for Delivery', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText)),
               const SizedBox(height: 16),

@@ -333,35 +333,6 @@ class _MasterDashboardState extends State<MasterDashboard> {
                                           child: Text(order['assignedTailor'] == null ? 'Assign Tailor' : 'Reassign Tailor'),
                                         ),
                                       ),
-                                    ] else if (status == 'trial') ...[
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: OutlinedButton(
-                                              onPressed: () => _updateStatus(order['_id'], 'alterations'),
-                                              style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
-                                              child: const Text('Alterations'),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: ElevatedButton(
-                                              onPressed: () => _updateStatus(order['_id'], 'trial_2'),
-                                              style: ElevatedButton.styleFrom(backgroundColor: goldColor, foregroundColor: darkText),
-                                              child: const Text('Approve Trial'),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ] else if (status == 'trial_2') ...[
-                                      SizedBox(
-                                        width: double.infinity,
-                                        child: ElevatedButton(
-                                          onPressed: () => _updateStatus(order['_id'], 'delivery'),
-                                          style: ElevatedButton.styleFrom(backgroundColor: goldColor, foregroundColor: darkText),
-                                          child: const Text('Ready for Delivery'),
-                                        ),
-                                      ),
                                     ]
                                   ],
                                 ),
