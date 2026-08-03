@@ -80,7 +80,7 @@ class OrderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> submitOrder() async {
+  Future<Map<String, dynamic>> submitOrder() async {
     final orderData = {
       'customerName': customerName.isNotEmpty ? customerName : 'Valued Customer',
       'customerPhone': customerPhone.isNotEmpty ? customerPhone : '9999999999',
@@ -112,7 +112,9 @@ class OrderProvider extends ChangeNotifier {
       'paymentStatus': paymentStatus,
     };
 
+    debugPrint('[ORDER_PROVIDER] Submitting order payload: $orderData');
     final result = await OrderService.createOrder(orderData);
-    return result['success'] == true;
+    debugPrint('[ORDER_PROVIDER] createOrder Result: $result');
+    return result;
   }
 }

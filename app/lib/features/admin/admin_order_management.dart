@@ -59,7 +59,7 @@ class _AdminOrderManagementState extends State<AdminOrderManagement> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(orderId, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: darkText)),
-                      Text('$customerName | Total: \$${order['totalCost'] ?? 0}', style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
+                      Text('$customerName | Total: ₹${order['totalCost'] ?? 0}', style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
                     ],
                   ),
                   Container(
@@ -171,7 +171,7 @@ class _AdminOrderManagementState extends State<AdminOrderManagement> {
                               final String orderId = order['_id'] != null ? "ORD-${order['_id'].toString().substring(0, 6).toUpperCase()}" : "ORD-${index + 100}";
                               final String client = order['customerName'] ?? order['customer']?['name'] ?? 'Walk-in Customer';
                               final String status = order['status'] ?? 'pending';
-                              final String cost = "\$${order['totalCost'] ?? 0}";
+                              final String cost = "₹${order['totalCost'] ?? 0}";
 
                               return _buildOrderItem(context, order, orderId, client, 'Total Cost: $cost', status, goldColor);
                             },

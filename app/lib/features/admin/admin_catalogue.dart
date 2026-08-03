@@ -15,9 +15,9 @@ class AdminCatalogueScreen extends StatelessWidget {
     ];
 
     final fabrics = [
-      {'name': 'Italian Wool Twill', 'rate': '\$45 / meter', 'finishes': 'Matte, Satin Finish', 'patterns': 'Solid, Houndstooth', 'image': 'assets/images/fabric_sample.png'},
-      {'name': 'Raw Silk Brocade', 'rate': '\$65 / meter', 'finishes': 'Glossy, Textured', 'patterns': 'Royal Jacquard', 'image': 'assets/images/fabric_sample.png'},
-      {'name': 'Egyptian Cotton Canvas', 'rate': '\$28 / meter', 'finishes': 'Crisp Matte', 'patterns': 'Plain Weave', 'image': 'assets/images/fabric_sample.png'},
+      {'name': 'Italian Wool Twill', 'rate': '₹45 / meter', 'finishes': 'Matte, Satin Finish', 'patterns': 'Solid, Houndstooth', 'image': 'assets/images/fabric_sample.png'},
+      {'name': 'Raw Silk Brocade', 'rate': '₹65 / meter', 'finishes': 'Glossy, Textured', 'patterns': 'Royal Jacquard', 'image': 'assets/images/fabric_sample.png'},
+      {'name': 'Egyptian Cotton Canvas', 'rate': '₹28 / meter', 'finishes': 'Crisp Matte', 'patterns': 'Plain Weave', 'image': 'assets/images/fabric_sample.png'},
     ];
 
     return Scaffold(

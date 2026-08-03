@@ -71,17 +71,17 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
     {
       'name': 'Handmade Gold Zardozi Embroidery',
       'addonHours': 6.0,
-      'description': 'Collar & Cuff Heavy Gold Threadwork (6 Crafting Hours @ \$20/hr = \$120)',
+      'description': 'Collar & Cuff Heavy Gold Threadwork (6 Crafting Hours @ ₹20/hr = ₹120)',
     },
     {
       'name': 'Satin Lapel Piping & Custom Buttons',
       'addonHours': 2.0,
-      'description': 'Satin Edge Trimming & Brass Buttons (2 Crafting Hours @ \$20/hr = \$40)',
+      'description': 'Satin Edge Trimming & Brass Buttons (2 Crafting Hours @ ₹20/hr = ₹40)',
     },
     {
       'name': 'Velvet Patchwork & Crest Emblem',
       'addonHours': 4.0,
-      'description': 'Embroidered Chest Crest & Velvet Highlights (4 Crafting Hours @ \$20/hr = \$80)',
+      'description': 'Embroidered Chest Crest & Velvet Highlights (4 Crafting Hours @ ₹20/hr = ₹80)',
     },
   ];
 
@@ -137,9 +137,9 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                           if (_currentStep < 4) {
                             setState(() => _currentStep += 1);
                           } else {
-                            bool success = await provider.submitOrder();
+                            final result = await provider.submitOrder();
                             if (!context.mounted) return;
-                            if (success) {
+                            if (result['success'] == true) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text('Order & Bill generated successfully!', style: TextStyle(color: darkText)),
@@ -148,8 +148,14 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                               );
                               Navigator.pop(context);
                             } else {
+                              final msg = result['message'] ?? 'Unknown Error';
+                              debugPrint('[ORDER_FLOW_SCREEN] Order Generation Failed: $msg');
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Failed to generate order.')),
+                                SnackBar(
+                                  content: Text('Failed to generate order: $msg'),
+                                  backgroundColor: Colors.redAccent,
+                                  duration: const Duration(seconds: 5),
+                                ),
                               );
                             }
                           }
@@ -324,7 +330,7 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                                 ),
                                 const SizedBox(height: 12),
                                 TextFormField(
-                                  decoration: const InputDecoration(labelText: 'Customer Budget (\$)'),
+                                  decoration: const InputDecoration(labelText: 'Customer Budget (₹)'),
                                   keyboardType: TextInputType.number,
                                   onChanged: (val) => provider.budget = double.tryParse(val) ?? 0,
                                 ),
@@ -430,7 +436,7 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                                               crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
                                                 Text(f['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: darkText)),
-                                                Text('\$${f['pricePerMeter']} / meter', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: goldColor)),
+                                                Text('₹${f['pricePerMeter']} / meter', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: goldColor)),
                                               ],
                                             ),
                                           ),
@@ -478,7 +484,7 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                             content: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Select Addon / Design (Addon Hours @ \$20/hr):', style: TextStyle(fontWeight: FontWeight.bold, color: darkText)),
+                                const Text('Select Addon / Design (Addon Hours @ ₹20/hr):', style: TextStyle(fontWeight: FontWeight.bold, color: darkText)),
                                 const SizedBox(height: 8),
                                 ..._addons.map((a) {
                                   final isSelected = provider.selectedAddon?['name'] == a['name'];
@@ -553,20 +559,20 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                                   ),
                                   child: Column(
                                     children: [
-                                      _buildPriceRow('Fabric Cost (${provider.fabricMeters}m @ \$${provider.selectedFabric?['pricePerMeter'] ?? 45}/m)', '\$${provider.fabricCost.toStringAsFixed(2)}'),
+                                      _buildPriceRow('Fabric Cost (${provider.fabricMeters}m @ ₹${provider.selectedFabric?['pricePerMeter'] ?? 45}/m)', '₹${provider.fabricCost.toStringAsFixed(2)}'),
                                       const SizedBox(height: 8),
-                                      _buildPriceRow('Garment Labor (${provider.selectedGarment?['laborHours'] ?? 10} hrs @ \$${provider.laborHourlyRate}/hr)', '\$${provider.garmentLaborCost.toStringAsFixed(2)}'),
+                                      _buildPriceRow('Garment Labor (${provider.selectedGarment?['laborHours'] ?? 10} hrs @ ₹${provider.laborHourlyRate}/hr)', '₹${provider.garmentLaborCost.toStringAsFixed(2)}'),
                                       const SizedBox(height: 8),
-                                      _buildPriceRow('Addon Crafting (${provider.selectedAddon?['addonHours'] ?? 6} hrs @ \$${provider.addonHourlyRate}/hr)', '\$${provider.addonCost.toStringAsFixed(2)}'),
+                                      _buildPriceRow('Addon Crafting (${provider.selectedAddon?['addonHours'] ?? 6} hrs @ ₹${provider.addonHourlyRate}/hr)', '₹${provider.addonCost.toStringAsFixed(2)}'),
                                       const Divider(height: 24),
-                                      _buildPriceRow('Total Calculated Cost', '\$${provider.totalCalculatedCost.toStringAsFixed(2)}', isBold: true),
+                                      _buildPriceRow('Total Calculated Cost', '₹${provider.totalCalculatedCost.toStringAsFixed(2)}', isBold: true),
                                     ],
                                   ),
                                 ),
                                 const SizedBox(height: 16),
 
                                 TextFormField(
-                                  decoration: const InputDecoration(labelText: 'Sales Discount (\$)'),
+                                  decoration: const InputDecoration(labelText: 'Sales Discount (₹)'),
                                   keyboardType: TextInputType.number,
                                   onChanged: (val) {
                                     setState(() {
@@ -599,7 +605,7 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       const Text('FINAL BILL AMOUNT', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
-                                      Text('\$${provider.finalBill.toStringAsFixed(2)}', style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: goldColor)),
+                                      Text('₹${provider.finalBill.toStringAsFixed(2)}', style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: goldColor)),
                                     ],
                                   ),
                                 )

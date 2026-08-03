@@ -108,7 +108,7 @@ class _EmployeeTasksScreenState extends State<EmployeeTasksScreen> with SingleTi
                                   const SizedBox(height: 12),
                                   Text(customerName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: darkText)),
                                   const SizedBox(height: 4),
-                                  Text('Total Bill: \$$totalCost', style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
+                                  Text('Total Bill: ₹$totalCost', style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
                                   const SizedBox(height: 14),
 
                                   Row(

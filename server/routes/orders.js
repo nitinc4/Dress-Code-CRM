@@ -6,6 +6,8 @@ const Customer = require('../models/Customer');
 // Create Order (by Sales Rep)
 router.post('/', async (req, res) => {
   try {
+    console.log('\n========================================');
+    console.log('[SERVER POST /orders] Incoming order payload:', JSON.stringify(req.body, null, 2));
     const { customerName, customerPhone, customerAddress, measurements } = req.body;
 
     // Find or create customer record
@@ -18,9 +20,11 @@ router.post('/', async (req, res) => {
         measurements: measurements || {}
       });
       await customer.save();
+      console.log('[SERVER POST /orders] New Customer Created:', customer._id);
     } else if (customer && measurements) {
       customer.measurements = { ...customer.measurements, ...measurements };
       await customer.save();
+      console.log('[SERVER POST /orders] Existing Customer Updated:', customer._id);
     }
 
     const orderData = {
@@ -32,9 +36,11 @@ router.post('/', async (req, res) => {
 
     const order = new Order(orderData);
     await order.save();
+    console.log('[SERVER POST /orders] Order saved successfully with ID:', order._id);
+    console.log('========================================\n');
     res.status(201).json(order);
   } catch (error) {
-    console.error("Order creation error:", error);
+    console.error('[SERVER POST /orders ERROR]:', error.message, error.stack);
     res.status(500).json({ error: error.message });
   }
 });
