@@ -35,3 +35,20 @@ Modules:
                 - create purchase orders
                 - receive shipments
                 - 
+
+
+Flow: 
+    - Order flow(sales): sales rep enters customer name and phone number if its an existing customer all the previous measurements, purchases(along with payment status and previous sales person) -> if new customer enter all detials[name, phone, address, email, event date and budget], if existing customer enter event date and budget and other details can be edited -> fabric selection[colour patteren quality] -> design selection[embrodiery, cutting ] -> select garment from catelouge based on the fabric -> take measurements/ edit existing measurements -> spec addons (designs with the location and accerories)  -> order priority is automatically calculated and assigned based on the event date -> calculate the total cost and show the bill break down the sales person can add a discount(show in bill only if discount is added) -> generate bill and collect payment partial/full and give an option to tap pay later(15 days). | trial flow: customer gets notif saying garment is ready for trial -> the customer selects a slot (send notif whn trial comes near) -> during trial the sales rep notes down any changes req 
+
+    Order status updates should send notifications to customer, respective sales rep and master, and the payment message should be sent after 15days if its still not cleared a message every 3days
+
+    whn the garment is ready for trial send notifications to the customer, respective sales rep and master, 
+    the 
+
+
+    - Production flow: sales rep intakes the order -> master recives a notification saying new order all orders are sorted based on priority -> master assignes a cutting master -> the cutting master sees only the fabric, measurements, due date, priority, and any special instructions (from addons), once done its marked as cutting completed -> if there are any hand works required master assigns a hand-worker -> hand-worker sees the design and location then marks as done -> then master assigns the order to a tailor(tailor sees fabric, measurements, addons ) if no hand work requried a tailour is assigned directly -> onces the tailour is done its handed over to the ironing team and then trial, if any changes requried the alterations are made then the final stiching and ironing process is done and garment is ready for delivery, sales rep then collects the remaining payment or marks it as paylater 
+
+
+
+
+    - Inventory management flow: admin sees all the inventory and plases and order for the requried material and enters a expected delivery date -> once the material is received the warehouse manager scans the barcore which adds the material to the current inventory -> whn a order is placed the warehouse manager sees the coresponding code scans it and despences the requried length which will be updated in the invetory, in case of extra fabric requried the tailors can request the material or the warehouse manager can directly enter the order and dispence the fabric 
