@@ -1,22 +1,17 @@
 import 'package:flutter/material.dart';
-import '../profile/profile_screen.dart';
-import 'leave_request_screen.dart';
-import 'payslip_screen.dart';
-import '../../core/services/auth_service.dart';
-import '../auth/role_selection_screen.dart';
-
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/services/auth_service.dart';
+import '../auth/login_screen.dart';
 
-class EmployeeMoreScreen extends StatefulWidget {
-  const EmployeeMoreScreen({super.key});
+class CustomerMoreScreen extends StatefulWidget {
+  const CustomerMoreScreen({super.key});
 
   @override
-  State<EmployeeMoreScreen> createState() => _EmployeeMoreScreenState();
+  State<CustomerMoreScreen> createState() => _CustomerMoreScreenState();
 }
 
-class _EmployeeMoreScreenState extends State<EmployeeMoreScreen> {
-  String _userName = 'Employee';
-  String _userRole = 'Staff';
+class _CustomerMoreScreenState extends State<CustomerMoreScreen> {
+  String _userName = 'Customer';
   String _userId = '';
 
   @override
@@ -28,8 +23,7 @@ class _EmployeeMoreScreenState extends State<EmployeeMoreScreen> {
   Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _userName = prefs.getString('user_name') ?? 'Employee';
-      _userRole = prefs.getString('user_role') ?? 'Staff';
+      _userName = prefs.getString('user_name') ?? 'Customer';
       _userId = prefs.getString('user_id') ?? '';
     });
   }
@@ -38,7 +32,7 @@ class _EmployeeMoreScreenState extends State<EmployeeMoreScreen> {
     await AuthService.logout();
     if (!context.mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const RoleSelectionScreen()),
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
       (route) => false,
     );
   }
@@ -69,8 +63,8 @@ class _EmployeeMoreScreenState extends State<EmployeeMoreScreen> {
                 children: [
                   CircleAvatar(
                     radius: 30,
-                    backgroundColor: const Color(0xFF2563EB).withOpacity(0.1),
-                    child: const Icon(Icons.person, size: 36, color: Color(0xFF2563EB)),
+                    backgroundColor: const Color(0xFFD4AF37).withOpacity(0.1),
+                    child: const Icon(Icons.person, size: 36, color: Color(0xFFD4AF37)),
                   ),
                   const SizedBox(width: 16),
                   Column(
@@ -78,8 +72,8 @@ class _EmployeeMoreScreenState extends State<EmployeeMoreScreen> {
                     children: [
                       Text(_userName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F2042))),
                       const SizedBox(height: 2),
-                      Text(_userRole.toUpperCase(), style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
-                      Text('Emp ID: EMP-${_userId.length > 4 ? _userId.substring(_userId.length - 4).toUpperCase() : '1025'}', style: const TextStyle(fontSize: 12, color: Color(0xFF2563EB), fontWeight: FontWeight.bold)),
+                      const Text('Valued Client', style: TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+                      Text('Client ID: CID-${_userId.length > 4 ? _userId.substring(_userId.length - 4).toUpperCase() : '0000'}', style: const TextStyle(fontSize: 12, color: Color(0xFFD4AF37), fontWeight: FontWeight.bold)),
                     ],
                   )
                 ],
@@ -97,22 +91,19 @@ class _EmployeeMoreScreenState extends State<EmployeeMoreScreen> {
               child: Column(
                 children: [
                   _buildListTile(context, Icons.person_outline, 'Personal Information', () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+                    // Navigate to Profile
                   }),
-                  _buildListTile(context, Icons.account_balance_outlined, 'Bank Details', () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+                  _buildListTile(context, Icons.straighten_outlined, 'My Measurements', () {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Measurements Module')));
                   }),
-                  _buildListTile(context, Icons.event_note_outlined, 'Leave Request', () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const LeaveRequestScreen()));
+                  _buildListTile(context, Icons.location_on_outlined, 'Addresses', () {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Addresses Module')));
                   }),
-                  _buildListTile(context, Icons.receipt_long_outlined, 'Payslip & Salary Details', () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const PayslipScreen()));
+                  _buildListTile(context, Icons.payment_outlined, 'Payment Methods', () {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payment Methods Module')));
                   }),
-                  _buildListTile(context, Icons.folder_outlined, 'Documents', () {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Documents module')));
-                  }),
-                  _buildListTile(context, Icons.campaign_outlined, 'Announcements', () {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No new announcements')));
+                  _buildListTile(context, Icons.campaign_outlined, 'Offers & Promotions', () {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No active promotions')));
                   }),
                   _buildListTile(context, Icons.help_outline, 'Helpdesk / Support', () {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Support ticket system')));
@@ -129,7 +120,7 @@ class _EmployeeMoreScreenState extends State<EmployeeMoreScreen> {
 
   Widget _buildListTile(BuildContext context, IconData icon, String title, VoidCallback onTap, {bool isDestructive = false}) {
     return ListTile(
-      leading: Icon(icon, color: isDestructive ? const Color(0xFFDC2626) : const Color(0xFF2563EB)),
+      leading: Icon(icon, color: isDestructive ? const Color(0xFFDC2626) : const Color(0xFFD4AF37)),
       title: Text(
         title,
         style: TextStyle(
