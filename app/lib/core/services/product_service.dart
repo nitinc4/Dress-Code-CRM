@@ -15,4 +15,17 @@ class ProductService {
       return [];
     }
   }
+
+  static Future<List<dynamic>> getProducts() async {
+    try {
+      final response = await ApiClient.get('/products');
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return [];
+    } catch (e) {
+      print('[PRODUCT_SERVICE] Error fetching products: $e');
+      return [];
+    }
+  }
 }

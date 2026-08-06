@@ -32,6 +32,7 @@ class AuthService {
         await prefs.setString('user_role', data['user']['role']);
         await prefs.setString('user_id', data['user']['id']);
         await prefs.setString('user_name', data['user']['name'] ?? 'Customer');
+        await prefs.setString('user_phone', phone);
         
         return {'success': true, 'data': data};
       } else {
@@ -58,7 +59,8 @@ class AuthService {
         await prefs.setString('jwt_token', token);
         await prefs.setString('user_role', data['user']['role']);
         await prefs.setString('user_id', data['user']['id']);
-        await prefs.setString('user_name', data['user']['name'] ?? 'Employee');
+        await prefs.setString('user_name', data['user']['name'] ?? 'Customer');
+        await prefs.setString('user_phone', phone);
         
         return {'success': true, 'data': data};
       } else {

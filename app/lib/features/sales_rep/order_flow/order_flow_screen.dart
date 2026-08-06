@@ -148,7 +148,25 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                         physics: const BouncingScrollPhysics(),
                         currentStep: _currentStep,
                         onStepContinue: () async {
-                          if (_currentStep < 4) {
+                          if (_currentStep == 3) {
+                            // Save measurements to database
+                            final customerData = {
+                              'phone': provider.customerPhone,
+                              'name': provider.customerName.isNotEmpty ? provider.customerName : 'Valued Customer',
+                              'address': provider.customerAddress,
+                              'measurements': provider.measurements,
+                            };
+                            if (provider.customerId != null) {
+                              await CustomerService.updateCustomer(provider.customerId!, customerData);
+                            } else {
+                              final res = await CustomerService.createCustomer(customerData);
+                              if (res['success'] == true && res['data'] != null) {
+                                provider.customerId = res['data']['_id'];
+                                provider.isExistingCustomer = true;
+                              }
+                            }
+                            setState(() => _currentStep += 1);
+                          } else if (_currentStep < 4) {
                             setState(() => _currentStep += 1);
                           } else {
                             final result = await provider.submitOrder();
@@ -239,6 +257,7 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                                         _isSearchingCustomer = false;
                                         if (existing != null) {
                                           provider.isExistingCustomer = true;
+                                          provider.customerId = existing['_id'];
                                           provider.customerName = existing['name'] ?? '';
                                           provider.customerAddress = existing['address'] ?? '';
                                           if (existing['measurements'] != null) {
@@ -612,7 +631,72 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                                   ],
                                   onChanged: (val) => setState(() => provider.paymentStatus = val!),
                                 ),
-                                const SizedBox(height: 24),
+                                const SizedBox(height: 16),
+                                if (provider.paymentStatus == 'partial') ...[
+                                  Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: goldColor.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: goldColor.withValues(alpha: 0.3)),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        TextFormField(
+                                          decoration: const InputDecoration(
+                                            labelText: 'Advance Amount Received (₹)',
+                                            prefixIcon: Icon(Icons.currency_rupee, color: goldColor),
+                                          ),
+                                          keyboardType: TextInputType.number,
+                                          onChanged: (val) {
+                                            setState(() {
+                                              provider.advancePaymentAmount = double.tryParse(val) ?? 0.0;
+                                            });
+                                          },
+                                        ),
+                                        const SizedBox(height: 16),
+                                        SizedBox(
+                                          width: double.infinity,
+                                          child: ElevatedButton.icon(
+                                            onPressed: () {
+                                              showDialog(
+                                                context: context,
+                                                builder: (context) => AlertDialog(
+                                                  title: const Text('Scan to Pay'),
+                                                  content: Column(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      Container(
+                                                        width: 200,
+                                                        height: 200,
+                                                        color: Colors.grey[200],
+                                                        child: const Center(child: Icon(Icons.qr_code, size: 150, color: darkText)),
+                                                      ),
+                                                      const SizedBox(height: 16),
+                                                      Text('Amount: ₹${provider.advancePaymentAmount.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                                                    ],
+                                                  ),
+                                                  actions: [
+                                                    TextButton(onPressed: () => Navigator.pop(context), child: const Text('Done')),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                            icon: const Icon(Icons.qr_code_scanner),
+                                            label: const Text('Generate Payment QR'),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: darkText,
+                                              foregroundColor: Colors.white,
+                                              padding: const EdgeInsets.symmetric(vertical: 12),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                ],
 
                                 // Final Bill Box
                                 Container(
@@ -621,11 +705,33 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                                     color: darkText,
                                     borderRadius: BorderRadius.circular(16),
                                   ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  child: Column(
                                     children: [
-                                      const Text('FINAL BILL AMOUNT', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
-                                      Text('₹${provider.finalBill.toStringAsFixed(2)}', style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: goldColor)),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          const Text('FINAL BILL AMOUNT', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
+                                          Text('₹${provider.finalBill.toStringAsFixed(2)}', style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: goldColor)),
+                                        ],
+                                      ),
+                                      if (provider.paymentStatus == 'partial') ...[
+                                        const Divider(color: Colors.white24, height: 24),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            const Text('Advance Paid', style: TextStyle(fontSize: 14, color: Colors.white70)),
+                                            Text('- ₹${provider.advancePaymentAmount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, color: Colors.white)),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            const Text('REMAINING BALANCE', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+                                            Text('₹${provider.remainingBalance.toStringAsFixed(2)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.redAccent)),
+                                          ],
+                                        ),
+                                      ],
                                     ],
                                   ),
                                 )

@@ -65,6 +65,18 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get orders by customer phone (for Customer App)
+router.get('/customer/:phone', async (req, res) => {
+  try {
+    const orders = await Order.find({ customerPhone: req.params.phone })
+      .populate('customer')
+      .sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get specific order by ID
 router.get('/:id', async (req, res) => {
   try {

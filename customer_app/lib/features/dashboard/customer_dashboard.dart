@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/services/customer_order_service.dart';
+import 'package:intl/intl.dart';
+import '../catalog/customer_catalog_screen.dart';
+import '../profile/customer_measurements_screen.dart';
+import '../support/customer_support_screen.dart';
 
 class CustomerDashboard extends StatefulWidget {
   const CustomerDashboard({super.key});
@@ -10,6 +15,8 @@ class CustomerDashboard extends StatefulWidget {
 
 class _CustomerDashboardState extends State<CustomerDashboard> {
   String _userName = 'Customer';
+  List<dynamic> _recentOrders = [];
+  bool _isLoadingOrders = true;
 
   @override
   void initState() {
@@ -21,6 +28,13 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _userName = prefs.getString('user_name') ?? 'Customer';
+    });
+    
+    // Load recent orders
+    final orders = await CustomerOrderService.getMyOrders();
+    setState(() {
+      _recentOrders = orders;
+      _isLoadingOrders = false;
     });
   }
 
@@ -87,7 +101,9 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                     const Text('Explore premium fabrics and modern cuts tailored just for you.', style: TextStyle(color: Colors.white70, fontSize: 13)),
                     const SizedBox(height: 20),
                     ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerCatalogScreen()));
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: goldColor,
                         foregroundColor: darkText,
@@ -106,26 +122,98 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Expanded(child: _buildActionCard(Icons.add_shopping_cart, 'New Order', () {})),
+                  Expanded(child: _buildActionCard(Icons.add_shopping_cart, 'New Order', () {
+                    _showNewOrderDialog(context);
+                  })),
                   const SizedBox(width: 16),
-                  Expanded(child: _buildActionCard(Icons.straighten, 'Measurements', () {})),
+                  Expanded(child: _buildActionCard(Icons.straighten, 'Measurements', () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerMeasurementsScreen()));
+                  })),
                   const SizedBox(width: 16),
-                  Expanded(child: _buildActionCard(Icons.support_agent, 'Support', () {})),
+                  Expanded(child: _buildActionCard(Icons.support_agent, 'Support', () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerSupportScreen()));
+                  })),
                 ],
               ),
               const SizedBox(height: 32),
 
               const Text('Recent Orders', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText)),
               const SizedBox(height: 16),
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32.0),
-                  child: Text('No recent orders.', style: TextStyle(color: Color(0xFF6B7280))),
-                ),
-              )
+              if (_isLoadingOrders)
+                const Center(child: Padding(padding: EdgeInsets.all(32.0), child: CircularProgressIndicator(color: goldColor)))
+              else if (_recentOrders.isEmpty)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: Text('No recent orders.', style: TextStyle(color: Color(0xFF6B7280))),
+                  ),
+                )
+              else
+                _buildRecentOrderCard(_recentOrders.first),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildRecentOrderCard(Map<String, dynamic> order) {
+    final date = order['createdAt'] != null ? DateTime.tryParse(order['createdAt']) : null;
+    final formattedDate = date != null ? DateFormat('MMM dd, yyyy').format(date) : 'Unknown Date';
+    final status = (order['status'] as String? ?? 'pending').replaceAll('_', ' ').toUpperCase();
+
+    Color statusColor;
+    if (status.contains('COMPLETED') || status.contains('DELIVERY')) statusColor = Colors.green;
+    else if (status.contains('TRIAL')) statusColor = Colors.orange;
+    else statusColor = const Color(0xFF3B82F6);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Order #${order['_id']?.toString().substring(18).toUpperCase() ?? '0000'}', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFD4AF37))),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+                child: Text(status, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: statusColor)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(order['garmentCategory'] ?? 'Bespoke Garment', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF121212))),
+          const SizedBox(height: 4),
+          Text('Fabric: ${order['fabricDetails']?['name'] ?? 'Custom Fabric'}', style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
+          const Divider(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Total Amount', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                  Text('₹${(order['totalCost'] ?? 0).toStringAsFixed(2)}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF121212))),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text('Order Date', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                  Text(formattedDate, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF121212))),
+                ],
+              )
+            ],
+          )
+        ],
       ),
     );
   }
@@ -147,6 +235,30 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
             Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF121212))),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showNewOrderDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Request Store Visit'),
+        content: const Text('Bespoke tailoring requires exact body measurements. Would you like to schedule a store visit to get started with a new garment?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Store visit requested! We will contact you shortly.')));
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4AF37)),
+            child: const Text('Request Callback', style: TextStyle(color: Colors.white)),
+          )
+        ],
       ),
     );
   }

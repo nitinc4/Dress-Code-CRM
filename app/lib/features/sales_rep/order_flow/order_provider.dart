@@ -7,6 +7,7 @@ class OrderProvider extends ChangeNotifier {
   String customerPhone = '';
   String customerAddress = '';
   bool isExistingCustomer = false;
+  String? customerId;
 
   // Step 2: Event Details
   DateTime? eventDate;
@@ -38,6 +39,7 @@ class OrderProvider extends ChangeNotifier {
 
   double discount = 0.0;
   String paymentStatus = 'pending';
+  double advancePaymentAmount = 0.0;
 
   // Calculated getters based on user specs formula:
   // 1. Fabric Cost = pricePerMeter * meters
@@ -65,6 +67,10 @@ class OrderProvider extends ChangeNotifier {
 
   double get finalBill {
     return (totalCalculatedCost - discount).clamp(0.0, double.infinity);
+  }
+
+  double get remainingBalance {
+    return (finalBill - advancePaymentAmount).clamp(0.0, double.infinity);
   }
 
   void calculatePriority() {
@@ -109,6 +115,8 @@ class OrderProvider extends ChangeNotifier {
       'addons': customNotes,
       'totalCost': finalBill,
       'discount': discount,
+      'advancePaymentAmount': advancePaymentAmount,
+      'remainingBalance': remainingBalance,
       'paymentStatus': paymentStatus,
       'status': 'fabric_dispensing',
     };

@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/auth_service.dart';
 import '../auth/login_screen.dart';
+import 'customer_measurements_screen.dart';
+import 'customer_profile_screen.dart';
+import 'customer_addresses_screen.dart';
+import 'customer_payments_screen.dart';
+import 'customer_offers_screen.dart';
+import '../support/customer_support_screen.dart';
 
 class CustomerMoreScreen extends StatefulWidget {
   const CustomerMoreScreen({super.key});
@@ -91,22 +97,22 @@ class _CustomerMoreScreenState extends State<CustomerMoreScreen> {
               child: Column(
                 children: [
                   _buildListTile(context, Icons.person_outline, 'Personal Information', () {
-                    // Navigate to Profile
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerProfileScreen()));
                   }),
                   _buildListTile(context, Icons.straighten_outlined, 'My Measurements', () {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Measurements Module')));
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerMeasurementsScreen()));
                   }),
                   _buildListTile(context, Icons.location_on_outlined, 'Addresses', () {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Addresses Module')));
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerAddressesScreen()));
                   }),
                   _buildListTile(context, Icons.payment_outlined, 'Payment Methods', () {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payment Methods Module')));
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerPaymentsScreen()));
                   }),
                   _buildListTile(context, Icons.campaign_outlined, 'Offers & Promotions', () {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No active promotions')));
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerOffersScreen()));
                   }),
                   _buildListTile(context, Icons.help_outline, 'Helpdesk / Support', () {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Support ticket system')));
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerSupportScreen()));
                   }),
                   _buildListTile(context, Icons.logout, 'Log Out', () => _logout(context), isDestructive: true),
                 ],
