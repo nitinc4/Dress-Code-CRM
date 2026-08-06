@@ -105,7 +105,7 @@ class _CustomerMoreScreenState extends State<CustomerMoreScreen> {
                   _buildListTile(context, Icons.location_on_outlined, 'Addresses', () {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerAddressesScreen()));
                   }),
-                  _buildListTile(context, Icons.payment_outlined, 'Payment Methods', () {
+                  _buildListTile(context, Icons.payment_outlined, 'Payments & Dues', () {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerPaymentsScreen()));
                   }),
                   _buildListTile(context, Icons.campaign_outlined, 'Offers & Promotions', () {

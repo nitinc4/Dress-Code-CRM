@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'features/auth/login_screen.dart';
+import 'features/common/customer_nav_wrapper.dart';
 
 void main() {
   runApp(const CustomerApp());
@@ -24,8 +26,25 @@ class CustomerApp extends StatelessWidget {
         ),
         fontFamily: 'Inter', // Fallback to default if not installed, but keeping design consistent
       ),
-      home: const LoginScreen(),
+      home: FutureBuilder<bool>(
+        future: _checkLoginStatus(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          }
+          if (snapshot.data == true) {
+            return const CustomerNavWrapper();
+          }
+          return const LoginScreen();
+        },
+      ),
       debugShowCheckedModeBanner: false,
     );
+  }
+
+  Future<bool> _checkLoginStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('jwt_token');
+    return token != null && token.isNotEmpty;
   }
 }

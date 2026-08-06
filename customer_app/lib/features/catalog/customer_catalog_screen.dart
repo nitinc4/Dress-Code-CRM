@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/services/product_service.dart';
+import 'customer_garment_config_screen.dart';
 
 class CustomerCatalogScreen extends StatefulWidget {
   const CustomerCatalogScreen({super.key});
@@ -10,7 +11,8 @@ class CustomerCatalogScreen extends StatefulWidget {
 
 class _CustomerCatalogScreenState extends State<CustomerCatalogScreen> {
   bool _isLoading = true;
-  List<dynamic> _products = [];
+  List<dynamic> _allProducts = [];
+  List<dynamic> _garments = [];
 
   @override
   void initState() {
@@ -21,7 +23,8 @@ class _CustomerCatalogScreenState extends State<CustomerCatalogScreen> {
   Future<void> _fetchProducts() async {
     final products = await ProductService.getProducts();
     setState(() {
-      _products = products;
+      _allProducts = products;
+      _garments = products.where((p) => p['category'] == 'mens_wear' || p['category'] == 'womens_wear').toList();
       _isLoading = false;
     });
   }
@@ -42,101 +45,119 @@ class _CustomerCatalogScreenState extends State<CustomerCatalogScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: goldColor))
-          : _products.isEmpty
+          : _garments.isEmpty
               ? const Center(
-                  child: Text('No products available at the moment.', style: TextStyle(color: Color(0xFF6B7280))),
+                  child: Text('No garments available at the moment.', style: TextStyle(color: Color(0xFF6B7280))),
                 )
-              : ListView.separated(
-                  padding: const EdgeInsets.all(20),
+              : GridView.builder(
+                  padding: const EdgeInsets.all(16),
                   physics: const BouncingScrollPhysics(),
-                  itemCount: _products.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 20),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 0.65,
+                  ),
+                  itemCount: _garments.length,
                   itemBuilder: (context, index) {
-                    final product = _products[index];
-                    return _buildProductCard(product, goldColor, darkText);
+                    final garment = _garments[index];
+                    return _buildProductCard(garment, goldColor, darkText, index);
                   },
                 ),
     );
   }
 
-  Widget _buildProductCard(Map<String, dynamic> product, Color goldColor, Color darkText) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: 150,
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              color: Color(0xFF0F2042),
-              borderRadius: BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
+  Widget _buildProductCard(Map<String, dynamic> product, Color goldColor, Color darkText, int index) {
+    final suitImages = [
+      'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&q=80',
+      'https://images.unsplash.com/photo-1593030761757-71fae46fa84d?w=800&q=80',
+      'https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=800&q=80',
+      'https://images.unsplash.com/photo-1592878904946-b3cd8ae243d0?w=800&q=80',
+      'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=800&q=80',
+      'https://images.unsplash.com/photo-1548883354-7622d03aca27?w=800&q=80',
+    ];
+    final dressImages = [
+      'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800&q=80',
+      'https://images.unsplash.com/photo-1566160983994-01be18241512?w=800&q=80',
+      'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=800&q=80',
+      'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=80',
+    ];
+
+    final isWomens = product['category'] == 'womens_wear';
+    final imageList = isWomens ? dressImages : suitImages;
+    final fallbackUrl = imageList[index % imageList.length];
+    final imageUrl = (product['image'] != null && product['image'].toString().startsWith('http'))
+        ? product['image']
+        : fallbackUrl;
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => CustomerGarmentConfigScreen(garment: product, allProducts: _allProducts, imageUrl: imageUrl)));
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 3,
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0F2042),
+                  borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
+                  image: DecorationImage(
+                    image: NetworkImage(imageUrl),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
             ),
-            child: Center(
-              child: Icon(Icons.checkroom, size: 64, color: goldColor.withOpacity(0.5)),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(product['name'] ?? 'Garment', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: darkText)),
-                const SizedBox(height: 8),
-                Text(product['description'] ?? 'Premium bespoke tailoring.', style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280))),
-                const SizedBox(height: 16),
-                Row(
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Starting at ₹${product['basePrice'] ?? 0}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: goldColor)),
-                    ElevatedButton(
-                      onPressed: () {
-                        _showInterestDialog();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0F2042),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      child: const Text('I\'m Interested'),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(product['name'] ?? 'Garment', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: darkText), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        const SizedBox(height: 4),
+                        Text(product['description'] ?? 'Premium bespoke tailoring.', style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)), maxLines: 2, overflow: TextOverflow.ellipsis),
+                      ],
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('₹${product['price'] ?? 0}', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: goldColor)),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: goldColor,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 12),
+                        )
+                      ],
                     )
                   ],
-                )
-              ],
-            ),
-          )
-        ],
+                ),
+              ),
+            )
+          ],
+        ),
       ),
     );
   }
 
-  void _showInterestDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Request Store Visit'),
-        content: const Text('Bespoke tailoring requires exact body measurements. Would you like to schedule a store visit to get started with this garment?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Store visit requested! We will contact you shortly.')));
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4AF37)),
-            child: const Text('Request Callback', style: TextStyle(color: Colors.white)),
-          )
-        ],
-      ),
-    );
-  }
+
 }

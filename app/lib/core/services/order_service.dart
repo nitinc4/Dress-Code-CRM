@@ -16,6 +16,19 @@ class OrderService {
     }
   }
 
+  static Future<List<dynamic>> getOrdersByCustomer(String phone) async {
+    try {
+      final response = await ApiClient.get('/orders/customer/$phone');
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return [];
+    } catch (e) {
+      debugPrint('[ORDER_SERVICE] Error getOrdersByCustomer: $e');
+      return [];
+    }
+  }
+
   static Future<Map<String, dynamic>> createOrder(Map<String, dynamic> orderData) async {
     try {
       debugPrint('[ORDER_SERVICE] Sending POST /orders payload: ${jsonEncode(orderData)}');

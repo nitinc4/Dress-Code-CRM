@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'order_provider.dart';
 import '../../../core/services/customer_service.dart';
 import '../../../core/services/product_service.dart';
+import '../../../core/services/order_service.dart';
 
 class OrderFlowScreen extends StatefulWidget {
   const OrderFlowScreen({super.key});
@@ -13,8 +14,15 @@ class OrderFlowScreen extends StatefulWidget {
 
 class _OrderFlowScreenState extends State<OrderFlowScreen> {
   int _currentStep = 0;
+  
+  // Order processing state
+  bool _isProcessing = false;
+  
+  // Existing customer tracking
   bool _isSearchingCustomer = false;
   String? _customerStatusBadge;
+  List<dynamic> _customerPastOrders = [];
+  bool _isLoadingPastOrders = false;
 
   // Placeholder Data Catalogs (Men's Wear Specs)
   final List<Map<String, dynamic>> _fabrics = [
@@ -266,14 +274,27 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                                             });
                                           }
                                           _customerStatusBadge = '✓ Existing Customer: ${existing['name']} (Details & Measurements Loaded)';
+                                          _isLoadingPastOrders = true;
                                         } else {
                                           provider.isExistingCustomer = false;
+                                          _customerPastOrders = [];
                                           _customerStatusBadge = '+ New Customer Enter details below';
                                         }
                                       });
+                                      
+                                      if (existing != null) {
+                                        final pastOrders = await OrderService.getOrdersByCustomer(val);
+                                        if (mounted) {
+                                          setState(() {
+                                            _customerPastOrders = pastOrders;
+                                            _isLoadingPastOrders = false;
+                                          });
+                                        }
+                                      }
                                     } else {
                                       setState(() {
                                         _customerStatusBadge = null;
+                                        _customerPastOrders = [];
                                       });
                                     }
                                   },
@@ -302,6 +323,120 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                                       ),
                                     ),
                                   ),
+                                  
+                                if (provider.isExistingCustomer && _isLoadingPastOrders)
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 8.0),
+                                    child: Center(child: CircularProgressIndicator(color: goldColor)),
+                                  ),
+                                  
+                                if (provider.isExistingCustomer && !_isLoadingPastOrders && _customerPastOrders.isNotEmpty)
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const SizedBox(height: 8),
+                                      const Text('Past Order History', style: TextStyle(fontWeight: FontWeight.bold, color: darkText, fontSize: 16)),
+                                      const SizedBox(height: 12),
+                                      SizedBox(
+                                        height: 140,
+                                        child: ListView.separated(
+                                          scrollDirection: Axis.horizontal,
+                                          itemCount: _customerPastOrders.length,
+                                          separatorBuilder: (_, __) => const SizedBox(width: 12),
+                                          itemBuilder: (context, index) {
+                                            final order = _customerPastOrders[index];
+                                            final totalCost = (order['totalCost'] ?? 0).toDouble();
+                                            final paymentStatus = order['paymentStatus']?.toString().toUpperCase() ?? 'PENDING';
+                                            final garment = order['garmentCategory'] ?? 'Garment';
+                                            final dateStr = order['createdAt'] ?? '';
+                                            final date = dateStr.length >= 10 ? dateStr.substring(0, 10) : dateStr;
+                                            
+                                            // Extract Sales Person (Assigned Master)
+                                            String salesPerson = 'N/A';
+                                            if (order['assignedMaster'] != null && order['assignedMaster'] is Map) {
+                                              salesPerson = order['assignedMaster']['name'] ?? 'N/A';
+                                            } else if (order['originalTailor'] != null && order['originalTailor'] is Map) {
+                                              salesPerson = order['originalTailor']['name'] ?? 'N/A';
+                                            }
+                                            
+                                            // Determine paid status based on breakdown
+                                            double orderPaid = 0.0;
+                                            if (order['pricingBreakdown'] != null) {
+                                              var advance = order['pricingBreakdown']['advancePaymentAmount'];
+                                              if (advance != null) {
+                                                orderPaid = advance is String ? (double.tryParse(advance) ?? 0.0) : advance.toDouble();
+                                              }
+                                            }
+                                            double orderDue = totalCost - orderPaid;
+                                            bool isCleared = orderDue <= 0 && paymentStatus != 'PENDING';
+
+                                            return Container(
+                                              width: 220,
+                                              padding: const EdgeInsets.all(12),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white,
+                                                borderRadius: BorderRadius.circular(12),
+                                                border: Border.all(color: const Color(0xFFE2E8F0)),
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                    children: [
+                                                      Text(date, style: const TextStyle(color: Color(0xFF6B7280), fontSize: 12)),
+                                                      Container(
+                                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                        decoration: BoxDecoration(
+                                                          color: isCleared ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+                                                          borderRadius: BorderRadius.circular(4),
+                                                        ),
+                                                        child: Text(
+                                                          isCleared ? 'CLEARED' : (orderPaid > 0 ? 'PARTIAL' : 'PENDING'),
+                                                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isCleared ? Colors.green : Colors.orange),
+                                                        ),
+                                                      )
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  Text(garment, style: const TextStyle(fontWeight: FontWeight.bold, color: darkText, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                                  const SizedBox(height: 4),
+                                                  Row(
+                                                    children: [
+                                                      const Icon(Icons.person, size: 12, color: Color(0xFF6B7280)),
+                                                      const SizedBox(width: 4),
+                                                      Expanded(
+                                                        child: Text(salesPerson, style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const Spacer(),
+                                                  const Divider(height: 1),
+                                                  const Spacer(),
+                                                  Row(
+                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                    children: [
+                                                      const Text('Total:', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                                                      Text('₹${totalCost.toStringAsFixed(2)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                                                    ],
+                                                  ),
+                                                  Row(
+                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                    children: [
+                                                      const Text('Paid:', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                                                      Text('₹${orderPaid.toStringAsFixed(2)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.green)),
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                    ],
+                                  ),
+
                                 if (!provider.isExistingCustomer) ...[
                                   const SizedBox(height: 12),
                                   TextFormField(
