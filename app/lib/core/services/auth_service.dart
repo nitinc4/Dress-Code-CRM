@@ -61,4 +61,17 @@ class AuthService {
       return [];
     }
   }
+
+  static Future<Map<String, dynamic>?> getUserProfile(String userId) async {
+    try {
+      final response = await ApiClient.get('/auth/$userId');
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      print(e);
+      return null;
+    }
+  }
 }

@@ -67,7 +67,7 @@ class _AdminExecutiveDashboardState extends State<AdminExecutiveDashboard> {
                           ],
                         ),
                         SizedBox(height: 4),
-                        Text('Live Executive ERP Feed', style: TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
+                        Text('Executive Dashboard Overview', style: TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
                       ],
                     ),
                     Container(
@@ -87,7 +87,6 @@ class _AdminExecutiveDashboardState extends State<AdminExecutiveDashboard> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: const [
                     Text('Business Overview', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: darkText)),
-                    Text('Live Database', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 13)),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -150,7 +149,7 @@ class _AdminExecutiveDashboardState extends State<AdminExecutiveDashboard> {
                 const SizedBox(height: 24),
 
                 // Live Recent Activities
-                const Text('Recent Live Activity', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: darkText)),
+                const Text('Recent Activity', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: darkText)),
                 const SizedBox(height: 12),
                 _recentOrders.isEmpty
                     ? const Padding(padding: EdgeInsets.all(16), child: Text('No orders recorded in system yet.', style: TextStyle(color: Color(0xFF6B7280))))

@@ -265,8 +265,7 @@ class _WarehouseDashboardState extends State<WarehouseDashboard> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Inventory Stock (${_inventory.length})', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText)),
-                    const Text('Live Stock', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 12)),
+                    const Text('Inventory Overview', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText)),
                   ],
                 ),
                 const SizedBox(height: 12),

@@ -231,7 +231,7 @@ class _EmployeeAttendanceScreenState extends State<EmployeeAttendanceScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  // History Items from Live Database
+                  // History Items
                   _history.isEmpty
                       ? const Padding(
                           padding: EdgeInsets.all(20),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/services/auth_service.dart';
 import '../auth/role_selection_screen.dart';
+import 'admin_screens.dart';
 
 class AdminMoreMenu extends StatelessWidget {
   const AdminMoreMenu({super.key});
@@ -20,16 +21,15 @@ class AdminMoreMenu extends StatelessWidget {
     const darkText = Color(0xFF121212);
 
     final menuItems = [
-      {'title': 'Inventory', 'icon': Icons.inventory_2_outlined},
-      {'title': 'Sales', 'icon': Icons.trending_up_outlined},
-      {'title': 'Purchase', 'icon': Icons.shopping_bag_outlined},
-      {'title': 'Finance', 'icon': Icons.account_balance_wallet_outlined},
-      {'title': 'Approvals', 'icon': Icons.verified_outlined},
-      {'title': 'Reports', 'icon': Icons.bar_chart_outlined},
-      {'title': 'HR & Staff', 'icon': Icons.people_outline},
-      {'title': 'Branches', 'icon': Icons.storefront_outlined},
-      {'title': 'Fabric Rolls', 'icon': Icons.texture_outlined},
-      {'title': 'Settings', 'icon': Icons.settings_outlined},
+      {'title': 'Product Catalogue', 'icon': Icons.inventory_2_outlined, 'page': const AdminCatalogueScreen()},
+      {'title': 'Sales', 'icon': Icons.trending_up_outlined, 'page': const AdminSalesScreen()},
+      {'title': 'Purchase', 'icon': Icons.shopping_bag_outlined, 'page': const AdminPurchaseScreen()},
+      {'title': 'Finance', 'icon': Icons.account_balance_wallet_outlined, 'page': const AdminFinanceScreen()},
+      {'title': 'Approvals', 'icon': Icons.verified_outlined, 'page': const AdminApprovalsScreen()},
+      {'title': 'Reports', 'icon': Icons.bar_chart_outlined, 'page': const AdminReportsScreen()},
+      {'title': 'HR & Staff', 'icon': Icons.people_outline, 'page': const AdminHRStaffScreen()},
+      {'title': 'Fabric Rolls', 'icon': Icons.texture_outlined, 'page': const AdminFabricRollsScreen()},
+      {'title': 'Settings', 'icon': Icons.settings_outlined, 'page': const AdminSettingsScreen()},
     ];
 
     return Scaffold(
@@ -59,8 +59,9 @@ class AdminMoreMenu extends StatelessWidget {
                 final item = menuItems[index];
                 return InkWell(
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Opening ${item['title']} module...'), backgroundColor: goldColor),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => item['page'] as Widget),
                     );
                   },
                   child: Container(

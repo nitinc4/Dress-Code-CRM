@@ -156,7 +156,6 @@ class _TailorDashboardState extends State<TailorDashboard> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Assigned Orders (${_orders.length})', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText)),
-                    const Text('Live Specs', style: TextStyle(color: goldColor, fontWeight: FontWeight.bold, fontSize: 12)),
                   ],
                 ),
                 const SizedBox(height: 12),

@@ -30,11 +30,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadProfileData() async {
     final prefs = await SharedPreferences.getInstance();
+    final uid = prefs.getString('user_id') ?? '';
+    final role = prefs.getString('user_role') ?? 'Staff';
+    final name = prefs.getString('user_name') ?? 'Employee';
+
     setState(() {
-      _userId = prefs.getString('user_id') ?? '';
-      _userRole = prefs.getString('user_role') ?? 'Staff';
-      _nameController.text = prefs.getString('user_name') ?? 'Employee';
+      _userId = uid;
+      _userRole = role;
+      _nameController.text = name;
     });
+
+    if (uid.isNotEmpty) {
+      final userProfile = await AuthService.getUserProfile(uid);
+      if (userProfile != null && mounted) {
+        setState(() {
+          _nameController.text = userProfile['name'] ?? name;
+          _emailController.text = userProfile['email'] ?? '';
+          if (userProfile['bankingDetails'] != null) {
+            final bank = userProfile['bankingDetails'];
+            _accountNameController.text = bank['accountName'] ?? '';
+            _accountNumberController.text = bank['accountNumber'] ?? '';
+            _bankNameController.text = bank['bankName'] ?? '';
+            _ifscController.text = bank['ifsc'] ?? '';
+          }
+        });
+      }
+    }
   }
 
   Future<void> _updateProfile() async {

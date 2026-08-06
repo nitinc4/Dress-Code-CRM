@@ -42,4 +42,16 @@ class LeaveService {
       return [];
     }
   }
+
+  static Future<List<dynamic>> getAllLeaves() async {
+    try {
+      final response = await ApiClient.get('/leave/all');
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
 }

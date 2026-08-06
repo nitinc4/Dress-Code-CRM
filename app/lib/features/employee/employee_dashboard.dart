@@ -109,7 +109,7 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
                 ),
                 const SizedBox(height: 24),
 
-                // Attendance Live Status Card
+                // Attendance Status Card
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
@@ -157,7 +157,7 @@ class _EmployeeDashboardState extends State<EmployeeDashboard> {
                 ),
                 const SizedBox(height: 24),
 
-                // Live Metrics Grid
+                // Metrics Grid
                 const Text('Overview', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: darkText)),
                 const SizedBox(height: 12),
 

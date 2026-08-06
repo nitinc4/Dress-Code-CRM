@@ -32,17 +32,6 @@ class _AdminNavWrapperState extends State<AdminNavWrapper> {
         index: _currentIndex,
         children: _pages,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const OrderFlowScreen()),
-          );
-        },
-        backgroundColor: goldColor,
-        child: const Icon(Icons.add, color: darkText, size: 28),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
         notchMargin: 8,
@@ -54,7 +43,6 @@ class _AdminNavWrapperState extends State<AdminNavWrapper> {
             children: [
               _buildNavItem(0, Icons.grid_view_outlined, Icons.grid_view, 'Dashboard'),
               _buildNavItem(1, Icons.receipt_long_outlined, Icons.receipt_long, 'Orders'),
-              const SizedBox(width: 40), // Spacer for FAB
               _buildNavItem(2, Icons.precision_manufacturing_outlined, Icons.precision_manufacturing, 'Production'),
               _buildNavItem(3, Icons.apps_outlined, Icons.apps, 'More'),
             ],
