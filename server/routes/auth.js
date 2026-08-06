@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Customer = require('../models/Customer');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret_for_development_only';
 
@@ -20,6 +21,55 @@ router.post('/register', async (req, res) => {
     await user.save();
 
     res.status(201).json({ message: 'User created successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Check Phone (For Customer App)
+router.post('/check-phone', async (req, res) => {
+  try {
+    const { phone } = req.body;
+    const user = await User.findOne({ phone, role: 'customer' });
+    const customer = await Customer.findOne({ $or: [{ phone }, { contact: phone }] });
+    
+    res.json({
+      userExists: !!user,
+      customerExists: !!customer,
+      name: customer ? customer.name : null
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Register Customer (For Customer App)
+router.post('/register-customer', async (req, res) => {
+  try {
+    const { name, phone, password } = req.body;
+    let user = await User.findOne({ phone, role: 'customer' });
+    if (user) return res.status(400).json({ message: 'User already exists' });
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create User record for auth
+    user = new User({ name, phone, password: hashedPassword, role: 'customer' });
+    await user.save();
+
+    // Check if Customer record exists (from sales exec)
+    let customer = await Customer.findOne({ $or: [{ phone }, { contact: phone }] });
+    if (!customer) {
+      // Create Customer record for CRM
+      customer = new Customer({ name, phone, contact: phone });
+      await customer.save();
+    }
+
+    // Auto login
+    const payload = { userId: user._id, role: user.role };
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+
+    res.status(201).json({ token, user: { id: user._id, name: user.name, role: user.role } });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
