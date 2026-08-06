@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'order_provider.dart';
 import '../../../core/services/customer_service.dart';
+import '../../../core/services/product_service.dart';
 
 class OrderFlowScreen extends StatefulWidget {
   const OrderFlowScreen({super.key});
@@ -43,31 +44,38 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
     },
   ];
 
-  final List<Map<String, dynamic>> _garments = [
-    {
-      'name': 'Men\'s 3-Piece Tuxedo / Suit',
-      'laborHours': 10.0,
-      'metersNeeded': 3.5,
-      'image': 'assets/images/mens_suit.png',
-      'description': 'Jacket, Vest, & Trousers (10 Tailor Labor Hours)',
-    },
-    {
-      'name': 'Royal Wedding Sherwani',
-      'laborHours': 14.0,
-      'metersNeeded': 4.0,
-      'image': 'assets/images/mens_sherwani.png',
-      'description': 'Long Coat & Churidar (14 Tailor Labor Hours)',
-    },
-    {
-      'name': 'Silk Kurta Pajama',
-      'laborHours': 4.0,
-      'metersNeeded': 2.5,
-      'image': 'assets/images/mens_kurta.png',
-      'description': 'Traditional Kurta & Trousers (4 Tailor Labor Hours)',
-    },
-  ];
+  List<Map<String, dynamic>> _garments = [];
+  bool _isLoadingProducts = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProducts();
+  }
+
+  Future<void> _loadProducts() async {
+    final products = await ProductService.getProductsByCategory('mens_wear');
+    if (mounted) {
+      setState(() {
+        _garments = products.map((p) => {
+          'name': p['name'],
+          'laborHours': (p['laborHours'] ?? 10).toDouble(),
+          'metersNeeded': (p['metersNeeded'] ?? 3.5).toDouble(),
+          'image': p['image'] ?? 'assets/images/mens_suit.png',
+          'description': p['description'] ?? '',
+          'requiredMeasurements': p['requiredMeasurements'] ?? [],
+        }).toList();
+        _isLoadingProducts = false;
+      });
+    }
+  }
 
   final List<Map<String, dynamic>> _addons = [
+    {
+      'name': 'None / No Addons',
+      'addonHours': 0.0,
+      'description': 'Standard finish, no extra custom crafting required (0 Hours)',
+    },
     {
       'name': 'Handmade Gold Zardozi Embroidery',
       'addonHours': 6.0,
@@ -116,9 +124,13 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
               Expanded(
                 child: Consumer<OrderProvider>(
                   builder: (context, provider, child) {
+                    if (_isLoadingProducts) {
+                      return const Center(child: CircularProgressIndicator(color: goldColor));
+                    }
+
                     // Set defaults if null
                     provider.selectedFabric ??= _fabrics[0];
-                    provider.selectedGarment ??= _garments[0];
+                    provider.selectedGarment ??= _garments.isNotEmpty ? _garments[0] : null;
                     provider.selectedAddon ??= _addons[0];
 
                     return Theme(
@@ -130,7 +142,9 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                         ),
                       ),
                       child: Stepper(
-                        type: StepperType.vertical,
+                        type: StepperType.horizontal,
+                        elevation: 0,
+                        margin: EdgeInsets.zero,
                         physics: const BouncingScrollPhysics(),
                         currentStep: _currentStep,
                         onStepContinue: () async {
@@ -199,10 +213,12 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                         steps: [
                           // STEP 1: CUSTOMER (AUTOMATIC DB LOOKUP)
                           Step(
-                            title: const Text('Customer Information', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: darkText)),
+                            title: const SizedBox.shrink(),
                             content: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                const Text('1. Customer Information', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: darkText)),
+                                const SizedBox(height: 24),
                                 TextFormField(
                                   decoration: const InputDecoration(
                                     labelText: 'Phone Number (10 digits)',
@@ -226,13 +242,14 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                                           provider.customerName = existing['name'] ?? '';
                                           provider.customerAddress = existing['address'] ?? '';
                                           if (existing['measurements'] != null) {
-                                            provider.measurements['shoulder'] = (existing['measurements']['shoulder'] as num?)?.toDouble() ?? 17.5;
-                                            provider.measurements['chest'] = (existing['measurements']['chest'] as num?)?.toDouble() ?? 40.0;
+                                            (existing['measurements'] as Map<String, dynamic>).forEach((key, value) {
+                                              provider.measurements[key] = (value as num).toDouble();
+                                            });
                                           }
                                           _customerStatusBadge = '✓ Existing Customer: ${existing['name']} (Details & Measurements Loaded)';
                                         } else {
                                           provider.isExistingCustomer = false;
-                                          _customerStatusBadge = '+ New Customer Found (Enter details below)';
+                                          _customerStatusBadge = '+ New Customer Enter details below';
                                         }
                                       });
                                     } else {
@@ -288,10 +305,12 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
 
                           // STEP 2: EVENT
                           Step(
-                            title: const Text('Event Date & Budget', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: darkText)),
+                            title: const SizedBox.shrink(),
                             content: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                const Text('2. Event Date & Budget', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: darkText)),
+                                const SizedBox(height: 24),
                                 InkWell(
                                   onTap: () async {
                                     final date = await showDatePicker(
@@ -354,10 +373,12 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
 
                           // STEP 3: FABRIC & GARMENT CATALOGUE (WITH PICTURES & SPECS)
                           Step(
-                            title: const Text('Fabric & Garment Selection', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: darkText)),
+                            title: const SizedBox.shrink(),
                             content: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                const Text('3. Fabric & Garment Selection', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: darkText)),
+                                const SizedBox(height: 24),
                                 // Garment Category Selection
                                 const Text('1. Select Garment Type (Determines Labor Hours):', style: TextStyle(fontWeight: FontWeight.bold, color: darkText)),
                                 const SizedBox(height: 8),
@@ -480,10 +501,12 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
 
                           // STEP 4: MEASUREMENTS & ADDONS (FIXED HOURLY PRICE)
                           Step(
-                            title: const Text('Addons & Body Measurements', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: darkText)),
+                            title: const SizedBox.shrink(),
                             content: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                const Text('4. Addons & Body Measurements', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: darkText)),
+                                const SizedBox(height: 24),
                                 const Text('Select Addon / Design (Addon Hours @ ₹20/hr):', style: TextStyle(fontWeight: FontWeight.bold, color: darkText)),
                                 const SizedBox(height: 8),
                                 ..._addons.map((a) {
@@ -517,26 +540,21 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                                 const SizedBox(height: 16),
                                 const Text('Body Measurements (Inches):', style: TextStyle(fontWeight: FontWeight.bold, color: darkText)),
                                 const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    Expanded(
+                                Wrap(
+                                  spacing: 10,
+                                  runSpacing: 10,
+                                  children: (provider.selectedGarment?['requiredMeasurements'] as List<dynamic>?)?.map((m) {
+                                    final measurementName = m.toString();
+                                    return SizedBox(
+                                      width: (MediaQuery.of(context).size.width - 70) / 2, // Half width minus padding
                                       child: TextFormField(
-                                        initialValue: '17.5',
-                                        decoration: const InputDecoration(labelText: 'Shoulder'),
+                                        initialValue: provider.measurements[measurementName]?.toString() ?? '',
+                                        decoration: InputDecoration(labelText: measurementName),
                                         keyboardType: TextInputType.number,
-                                        onChanged: (val) => provider.measurements['shoulder'] = double.tryParse(val) ?? 17.5,
+                                        onChanged: (val) => provider.measurements[measurementName] = double.tryParse(val) ?? 0.0,
                                       ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: TextFormField(
-                                        initialValue: '40.0',
-                                        decoration: const InputDecoration(labelText: 'Chest'),
-                                        keyboardType: TextInputType.number,
-                                        onChanged: (val) => provider.measurements['chest'] = double.tryParse(val) ?? 40.0,
-                                      ),
-                                    ),
-                                  ],
+                                    );
+                                  }).toList() ?? [],
                                 ),
                               ],
                             ),
@@ -546,10 +564,12 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
 
                           // STEP 5: AUTOMATIC PRICE BREAKDOWN & BILL GENERATION
                           Step(
-                            title: const Text('Calculated Pricing & Bill Breakdown', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: darkText)),
+                            title: const SizedBox.shrink(),
                             content: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                const Text('5. Calculated Pricing & Bill', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: darkText)),
+                                const SizedBox(height: 24),
                                 Container(
                                   padding: const EdgeInsets.all(18),
                                   decoration: BoxDecoration(

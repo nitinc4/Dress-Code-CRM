@@ -2,28 +2,17 @@ import 'dart:convert';
 import '../network/api_client.dart';
 
 class ProductService {
-  static Future<List<dynamic>> getProducts() async {
+  static Future<List<dynamic>> getProductsByCategory(String category) async {
     try {
       final response = await ApiClient.get('/products');
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final List<dynamic> allProducts = jsonDecode(response.body);
+        return allProducts.where((p) => p['category'] == category).toList();
       }
       return [];
     } catch (e) {
-      print(e);
+      print('[PRODUCT_SERVICE] Error fetching products: $e');
       return [];
-    }
-  }
-
-  static Future<Map<String, dynamic>> createProduct(Map<String, dynamic> productData) async {
-    try {
-      final response = await ApiClient.post('/products', productData);
-      if (response.statusCode == 201) {
-        return {'success': true, 'data': jsonDecode(response.body)};
-      }
-      return {'success': false, 'message': 'Failed to create product'};
-    } catch (e) {
-      return {'success': false, 'message': e.toString()};
     }
   }
 }
