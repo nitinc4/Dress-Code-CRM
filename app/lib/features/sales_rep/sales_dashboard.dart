@@ -16,7 +16,10 @@ class _SalesDashboardState extends State<SalesDashboard> {
   List<dynamic> _trialOrders = [];
   List<dynamic> _trial2Orders = [];
   List<dynamic> _deliveryOrders = [];
+  List<dynamic> _allOrders = [];
   bool _isLoading = true;
+  String _searchQuery = '';
+  String _sortOption = 'Order Date (Newest)';
 
   @override
   void initState() {
@@ -34,9 +37,44 @@ class _SalesDashboardState extends State<SalesDashboard> {
         _trialOrders = trial;
         _trial2Orders = trial2;
         _deliveryOrders = delivery;
+        _allOrders = allOrders;
         _isLoading = false;
       });
     }
+  }
+
+  List<dynamic> get _filteredAndSortedOrders {
+    List<dynamic> filtered = _allOrders.where((order) {
+      if (_searchQuery.isEmpty) return true;
+      final q = _searchQuery.toLowerCase();
+      final name = (order['customerName'] ?? '').toString().toLowerCase();
+      final phone = (order['customerPhone'] ?? '').toString().toLowerCase();
+      final garment = (order['garmentCategory'] ?? '').toString().toLowerCase();
+      final id = (order['_id'] ?? '').toString().toLowerCase();
+      return name.contains(q) || phone.contains(q) || garment.contains(q) || id.contains(q);
+    }).toList();
+
+    filtered.sort((a, b) {
+      if (_sortOption == 'Order Date (Newest)') {
+        return (b['createdAt'] ?? '').toString().compareTo((a['createdAt'] ?? '').toString());
+      } else if (_sortOption == 'Order Date (Oldest)') {
+        return (a['createdAt'] ?? '').toString().compareTo((b['createdAt'] ?? '').toString());
+      } else if (_sortOption == 'Event Date') {
+        return (a['eventDate'] ?? '9999').toString().compareTo((b['eventDate'] ?? '9999').toString());
+      } else if (_sortOption == 'Status (Pending First)') {
+        // Let's sort by paymentStatus -> if not defined, check pricingBreakdown for dues
+        final statusA = (a['paymentStatus'] ?? '').toString().toLowerCase();
+        final statusB = (b['paymentStatus'] ?? '').toString().toLowerCase();
+        if (statusA == 'pending' && statusB != 'pending') return -1;
+        if (statusB == 'pending' && statusA != 'pending') return 1;
+        return 0; 
+      } else if (_sortOption == 'Client Name (A-Z)') {
+        return (a['customerName'] ?? '').toString().toLowerCase().compareTo((b['customerName'] ?? '').toString().toLowerCase());
+      }
+      return 0;
+    });
+    
+    return filtered;
   }
 
   Future<void> _updateStatus(String orderId, String status) async {
@@ -275,6 +313,166 @@ class _SalesDashboardState extends State<SalesDashboard> {
                           onPressed: () => _markCompleted(order['_id']),
                           style: ElevatedButton.styleFrom(backgroundColor: goldColor, foregroundColor: darkText, padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4)),
                           child: const Text('Deliver'),
+                        )
+                      ],
+                    ),
+                  );
+                }).toList(),
+              
+              const SizedBox(height: 40),
+              const Divider(height: 1, color: Color(0xFFE5E7EB)),
+              const SizedBox(height: 32),
+
+              // Order History Section
+              const Text('Order History', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: darkText)),
+              const SizedBox(height: 16),
+              
+              // Search & Sort Controls
+              Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Search by name, phone, garment...',
+                        prefixIcon: const Icon(Icons.search, color: goldColor),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: goldColor, width: 2)),
+                      ),
+                      onChanged: (val) {
+                        setState(() {
+                          _searchQuery = val;
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: const Color(0xFFE5E7EB)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _sortOption,
+                          isExpanded: true,
+                          icon: const Icon(Icons.sort, color: goldColor),
+                          style: const TextStyle(fontSize: 13, color: darkText),
+                          items: const [
+                            DropdownMenuItem(value: 'Order Date (Newest)', child: Text('Newest')),
+                            DropdownMenuItem(value: 'Order Date (Oldest)', child: Text('Oldest')),
+                            DropdownMenuItem(value: 'Event Date', child: Text('Event Date')),
+                            DropdownMenuItem(value: 'Status (Pending First)', child: Text('Pending First')),
+                            DropdownMenuItem(value: 'Client Name (A-Z)', child: Text('Name A-Z')),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() {
+                                _sortOption = val;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // Order History List
+              if (_isLoading)
+                const Center(child: CircularProgressIndicator(color: goldColor))
+              else if (_filteredAndSortedOrders.isEmpty)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: Text('No orders found.', style: TextStyle(color: Colors.black54)),
+                  ),
+                )
+              else
+                ..._filteredAndSortedOrders.map((order) {
+                  final orderId = order['_id']?.substring(0, 8) ?? 'Unknown';
+                  final cName = order['customerName'] ?? 'Customer';
+                  final cPhone = order['customerPhone'] ?? 'N/A';
+                  final garment = order['garmentCategory'] ?? 'Garment';
+                  final statusRaw = order['status'] ?? 'unknown';
+                  final paymentStatus = (order['paymentStatus'] ?? 'pending').toString().toUpperCase();
+                  
+                  final dateStr = order['createdAt'] ?? '';
+                  final date = dateStr.length >= 10 ? dateStr.substring(0, 10) : dateStr;
+                  
+                  final eventStr = order['eventDate'] ?? '';
+                  final eventDate = eventStr.length >= 10 ? eventStr.substring(0, 10) : 'N/A';
+
+                  // Determine badge color
+                  Color badgeColor = Colors.grey;
+                  if (statusRaw == 'completed' || paymentStatus == 'CLEARED') badgeColor = Colors.green;
+                  else if (statusRaw == 'delivery' || statusRaw == 'trial' || statusRaw == 'trial_2') badgeColor = Colors.blue;
+                  else if (statusRaw == 'sales' || paymentStatus == 'PENDING') badgeColor = Colors.orange;
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))
+                      ]
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(date, style: const TextStyle(color: Color(0xFF6B7280), fontSize: 12)),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: badgeColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                '${statusRaw.toString().replaceAll('_', ' ').toUpperCase()} • $paymentStatus',
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: badgeColor),
+                              ),
+                            )
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text('$cName', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: darkText)),
+                        Text(cPhone, style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13)),
+                        const SizedBox(height: 12),
+                        const Divider(height: 1, color: Color(0xFFE5E7EB)),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Garment', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                                const SizedBox(height: 2),
+                                Text(garment, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: darkText)),
+                              ],
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                const Text('Event Date', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                                const SizedBox(height: 2),
+                                Text(eventDate, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: darkText)),
+                              ],
+                            ),
+                          ],
                         )
                       ],
                     ),

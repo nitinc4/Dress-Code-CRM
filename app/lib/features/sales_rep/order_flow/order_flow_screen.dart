@@ -437,15 +437,17 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                                     ],
                                   ),
 
-                                if (!provider.isExistingCustomer) ...[
+                                if (provider.customerPhone.length == 10) ...[
                                   const SizedBox(height: 12),
                                   TextFormField(
+                                    key: ValueKey('name_${provider.customerId ?? provider.customerPhone}'),
                                     initialValue: provider.customerName,
                                     decoration: const InputDecoration(labelText: 'Full Customer Name'),
                                     onChanged: (val) => provider.customerName = val,
                                   ),
                                   const SizedBox(height: 12),
                                   TextFormField(
+                                    key: ValueKey('address_${provider.customerId ?? provider.customerPhone}'),
                                     initialValue: provider.customerAddress,
                                     decoration: const InputDecoration(labelText: 'Delivery Address'),
                                     onChanged: (val) => provider.customerAddress = val,
@@ -509,14 +511,25 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                                 ),
                                 if (provider.eventDate != null)
                                   Padding(
-                                    padding: const EdgeInsets.only(top: 12.0),
-                                    child: Text(
-                                      'Calculated Priority: ${provider.orderPriority.toUpperCase()}',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                        color: provider.orderPriority == 'urgent' ? Colors.redAccent : goldColor,
+                                    padding: const EdgeInsets.only(top: 16.0),
+                                    child: DropdownButtonFormField<String>(
+                                      value: provider.orderPriority,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Order Priority (Auto-calculated, but editable)',
+                                        prefixIcon: Icon(Icons.flag, color: goldColor),
                                       ),
+                                      items: const [
+                                        DropdownMenuItem(value: 'normal', child: Text('Normal')),
+                                        DropdownMenuItem(value: 'high', child: Text('High', style: TextStyle(color: Colors.orange))),
+                                        DropdownMenuItem(value: 'urgent', child: Text('Urgent', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold))),
+                                      ],
+                                      onChanged: (val) {
+                                        if (val != null) {
+                                          setState(() {
+                                            provider.orderPriority = val;
+                                          });
+                                        }
+                                      },
                                     ),
                                   )
                               ],
@@ -702,6 +715,7 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                                     return SizedBox(
                                       width: (MediaQuery.of(context).size.width - 70) / 2, // Half width minus padding
                                       child: TextFormField(
+                                        key: ValueKey('${provider.customerId ?? 'new'}_$measurementName'),
                                         initialValue: provider.measurements[measurementName]?.toString() ?? '',
                                         decoration: InputDecoration(labelText: measurementName),
                                         keyboardType: TextInputType.number,
