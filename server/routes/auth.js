@@ -78,8 +78,17 @@ router.post('/register-customer', async (req, res) => {
 // Login User
 router.post('/login', async (req, res) => {
   try {
-    const { phone, password } = req.body;
-    const user = await User.findOne({ phone });
+    const { phone, email, password } = req.body;
+    const identifier = phone || email;
+    
+    if (!identifier) {
+      return res.status(400).json({ message: 'Please provide phone or email' });
+    }
+
+    const user = await User.findOne({ 
+      $or: [{ phone: identifier }, { email: identifier }] 
+    });
+    
     if (!user) return res.status(400).json({ message: 'Invalid credentials' });
 
     const isMatch = await bcrypt.compare(password, user.password);
