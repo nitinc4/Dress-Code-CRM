@@ -4,7 +4,7 @@ const User = require('./models/User');
 require('dotenv').config();
 
 const users = [
-  { name: 'Admin User', phone: '1000000000', password: 'password123', role: 'admin' },
+  { name: 'Admin User', phone: '1000000000', email: 'admin@dresscode.com', password: 'password123', role: 'admin' },
   { name: 'Sales Rep 1', phone: '2000000000', password: 'password123', role: 'sales_rep' },
   { name: 'Master 1', phone: '3000000000', password: 'password123', role: 'master' },
   { name: 'Tailor 1', phone: '4000000000', password: 'password123', role: 'tailor' },

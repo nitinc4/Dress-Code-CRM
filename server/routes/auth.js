@@ -86,6 +86,15 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Please provide phone or email' });
     }
 
+    // Quick patch: If the admin user in the database only has a phone number (from old seed),
+    // and the user is trying to log in with the default admin email, assign it to them.
+    if (identifier === 'admin@dresscode.com') {
+      await User.updateOne(
+        { role: 'admin', $or: [{ email: { $exists: false } }, { email: null }, { email: "" }] },
+        { $set: { email: 'admin@dresscode.com' } }
+      );
+    }
+
     const user = await User.findOne({ 
       $or: [{ phone: identifier }, { email: identifier }] 
     });
