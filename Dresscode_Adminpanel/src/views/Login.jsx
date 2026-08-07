@@ -5,7 +5,7 @@ import { api } from '../services/api';
 import { Lock, Mail, Loader2 } from 'lucide-react';
 
 const Login = () => {
-  const [identifier, setIdentifier] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -18,7 +18,7 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const res = await api.post('/api/auth/login', { email: identifier, password });
+      const res = await api.post('/api/auth/login', { email, password });
       if (res.data && res.data.token) {
         login(res.data.token);
         navigate('/');
@@ -50,19 +50,19 @@ const Login = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                Email Address or Phone Number
+                Email Address
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Mail className="h-5 w-5 text-slate-500" />
                 </div>
                 <input
-                  type="text"
+                  type="email"
                   required
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="block w-full pl-10 pr-3 py-2.5 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                  placeholder="admin@dresscode.com or 1234567890"
+                  placeholder="admin@dresscode.com"
                 />
               </div>
             </div>
