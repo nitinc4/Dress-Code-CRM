@@ -202,6 +202,18 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
                 children: [
                   const Text('Total Amount', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
                   Text('₹${(order['totalCost'] ?? 0).toStringAsFixed(2)}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF121212))),
+                  if ((order['pricingBreakdown']?['advancePaymentAmount'] ?? 0) > 0) ...[
+                    const SizedBox(height: 6),
+                    const Text('Paid Amount', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                    Text('₹${(order['pricingBreakdown']['advancePaymentAmount']).toStringAsFixed(2)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.green)),
+                    const SizedBox(height: 6),
+                    const Text('Balance Due', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                    Text('₹${(order['pricingBreakdown']['remainingBalance'] ?? 0).toStringAsFixed(2)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.redAccent)),
+                  ] else if (order['paymentStatus'] == 'pending') ...[
+                    const SizedBox(height: 6),
+                    const Text('Balance Due', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                    Text('₹${(order['totalCost'] ?? 0).toStringAsFixed(2)}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.redAccent)),
+                  ],
                 ],
               ),
               Column(

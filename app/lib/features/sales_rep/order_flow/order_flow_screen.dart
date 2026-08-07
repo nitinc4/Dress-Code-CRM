@@ -23,6 +23,7 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
   String? _customerStatusBadge;
   List<dynamic> _customerPastOrders = [];
   bool _isLoadingPastOrders = false;
+  bool _isAdvancePaid = false;
 
   // Placeholder Data Catalogs (Men's Wear Specs)
   final List<Map<String, dynamic>> _fabrics = [
@@ -793,6 +794,7 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         TextFormField(
+                                          enabled: !_isAdvancePaid,
                                           decoration: const InputDecoration(
                                             labelText: 'Advance Amount Received (₹)',
                                             prefixIcon: Icon(Icons.currency_rupee, color: goldColor),
@@ -805,41 +807,61 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                                           },
                                         ),
                                         const SizedBox(height: 16),
-                                        SizedBox(
-                                          width: double.infinity,
-                                          child: ElevatedButton.icon(
-                                            onPressed: () {
-                                              showDialog(
-                                                context: context,
-                                                builder: (context) => AlertDialog(
-                                                  title: const Text('Scan to Pay'),
-                                                  content: Column(
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    children: [
-                                                      Container(
-                                                        width: 200,
-                                                        height: 200,
-                                                        color: Colors.grey[200],
-                                                        child: const Center(child: Icon(Icons.qr_code, size: 150, color: darkText)),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: ElevatedButton.icon(
+                                                onPressed: _isAdvancePaid ? null : () {
+                                                  showDialog(
+                                                    context: context,
+                                                    builder: (context) => AlertDialog(
+                                                      title: const Text('Scan to Pay'),
+                                                      content: Column(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          Container(
+                                                            width: 200,
+                                                            height: 200,
+                                                            color: Colors.grey[200],
+                                                            child: const Center(child: Icon(Icons.qr_code, size: 150, color: darkText)),
+                                                          ),
+                                                          const SizedBox(height: 16),
+                                                          Text('Amount: ₹${provider.advancePaymentAmount.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                                                        ],
                                                       ),
-                                                      const SizedBox(height: 16),
-                                                      Text('Amount: ₹${provider.advancePaymentAmount.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                                                    ],
-                                                  ),
-                                                  actions: [
-                                                    TextButton(onPressed: () => Navigator.pop(context), child: const Text('Done')),
-                                                  ],
+                                                      actions: [
+                                                        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Done')),
+                                                      ],
+                                                    ),
+                                                  );
+                                                },
+                                                icon: const Icon(Icons.qr_code_scanner),
+                                                label: const Text('Generate QR'),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: darkText,
+                                                  foregroundColor: Colors.white,
+                                                  padding: const EdgeInsets.symmetric(vertical: 12),
                                                 ),
-                                              );
-                                            },
-                                            icon: const Icon(Icons.qr_code_scanner),
-                                            label: const Text('Generate Payment QR'),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: darkText,
-                                              foregroundColor: Colors.white,
-                                              padding: const EdgeInsets.symmetric(vertical: 12),
+                                              ),
                                             ),
-                                          ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: ElevatedButton.icon(
+                                                onPressed: _isAdvancePaid ? null : () {
+                                                  setState(() {
+                                                    _isAdvancePaid = true;
+                                                  });
+                                                },
+                                                icon: Icon(_isAdvancePaid ? Icons.check_circle : Icons.payment),
+                                                label: Text(_isAdvancePaid ? 'Paid' : 'Mark as Paid'),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: _isAdvancePaid ? Colors.green : goldColor,
+                                                  foregroundColor: _isAdvancePaid ? Colors.white : darkText,
+                                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
@@ -859,8 +881,8 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                                       Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
-                                          const Text('FINAL BILL AMOUNT', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
-                                          Text('₹${provider.finalBill.toStringAsFixed(2)}', style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: goldColor)),
+                                          const Text('TOTAL COST', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
+                                          Text('₹${provider.finalBill.toStringAsFixed(2)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
                                         ],
                                       ),
                                       if (provider.paymentStatus == 'partial') ...[
@@ -868,16 +890,33 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                                         Row(
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
-                                            const Text('Advance Paid', style: TextStyle(fontSize: 14, color: Colors.white70)),
-                                            Text('- ₹${provider.advancePaymentAmount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, color: Colors.white)),
+                                            Row(
+                                              children: [
+                                                const Text('Advance Paid', style: TextStyle(fontSize: 14, color: Colors.white70)),
+                                                if (_isAdvancePaid) const Padding(
+                                                  padding: EdgeInsets.only(left: 6.0),
+                                                  child: Icon(Icons.check_circle, color: Colors.greenAccent, size: 16),
+                                                )
+                                              ],
+                                            ),
+                                            Text('- ₹${provider.advancePaymentAmount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, color: Colors.greenAccent)),
                                           ],
                                         ),
                                         const SizedBox(height: 8),
                                         Row(
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
-                                            const Text('REMAINING BALANCE', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
-                                            Text('₹${provider.remainingBalance.toStringAsFixed(2)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.redAccent)),
+                                            const Text('AMOUNT DUE', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+                                            Text('₹${provider.remainingBalance.toStringAsFixed(2)}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: goldColor)),
+                                          ],
+                                        ),
+                                      ] else ...[
+                                        const Divider(color: Colors.white24, height: 24),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            const Text('AMOUNT DUE', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+                                            Text('₹${provider.finalBill.toStringAsFixed(2)}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: goldColor)),
                                           ],
                                         ),
                                       ],
