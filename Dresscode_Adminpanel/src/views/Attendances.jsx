@@ -62,9 +62,9 @@ const Attendances = () => {
       case 'Checked In':
         return <span className="px-2.5 py-1 text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20 rounded-full flex items-center gap-1"><CheckCircle className="w-3 h-3"/> {status}</span>;
       case 'Checked Out':
-        return <span className="px-2.5 py-1 text-xs font-medium bg-slate-500/10 text-slate-400 border border-slate-500/20 rounded-full flex items-center gap-1"><XCircle className="w-3 h-3"/> {status}</span>;
+        return <span className="px-2.5 py-1 text-xs font-medium bg-neutral-500/10 text-black border border-neutral-500/20 rounded-full flex items-center gap-1"><XCircle className="w-3 h-3"/> {status}</span>;
       default:
-        return <span className="px-2.5 py-1 text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full">{status}</span>;
+        return <span className="px-2.5 py-1 text-xs font-medium bg-gold-500/10 text-gold-400 border border-gold-500/20 rounded-full">{status}</span>;
     }
   };
 
@@ -72,21 +72,21 @@ const Attendances = () => {
     <div className="p-6">
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-white">Attendances</h1>
-          <p className="text-slate-400 text-sm mt-1">Manage and view employee attendances</p>
+          <h1 className="text-2xl font-bold text-black">Attendances</h1>
+          <p className="text-black text-sm mt-1">Manage and view employee attendances</p>
         </div>
         <button 
           onClick={fetchAttendances}
-          className="px-4 py-2 bg-slate-800 text-white rounded-lg border border-slate-700 hover:bg-slate-700 transition-colors text-sm font-medium"
+          className="px-4 py-2 bg-white text-black rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors text-sm font-medium"
         >
           Refresh Data
         </button>
       </div>
 
-      <div className="bg-slate-800 rounded-xl shadow-sm border border-slate-700 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-300">
-            <thead className="text-xs uppercase bg-slate-900/50 text-slate-400 border-b border-slate-700">
+          <table className="w-full text-left text-sm text-black">
+            <thead className="text-xs uppercase bg-gray-50/50 text-black border-b border-gray-200">
               <tr>
                 <th className="px-6 py-4 font-semibold">User ID</th>
                 <th className="px-6 py-4 font-semibold">Date</th>
@@ -100,44 +100,44 @@ const Attendances = () => {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan="7" className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan="7" className="px-6 py-12 text-center text-black">
                     <div className="flex flex-col items-center justify-center">
-                      <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                      <div className="w-8 h-8 border-4 border-gold-500 border-t-transparent rounded-full animate-spin mb-4"></div>
                       <p>Loading attendances...</p>
                     </div>
                   </td>
                 </tr>
               ) : attendances.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan="7" className="px-6 py-12 text-center text-black">
                     No attendances found
                   </td>
                 </tr>
               ) : (
                 attendances.map((attendance) => (
-                  <tr key={attendance._id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
+                  <tr key={attendance._id} className="border-b border-gray-200/50 hover:bg-gray-100/30 transition-colors">
                     <td className="px-6 py-4 font-mono text-xs">{attendance.userId.slice(-6)}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-slate-500" />
+                        <Calendar className="w-4 h-4 text-black" />
                         {formatDate(attendance.date)}
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-slate-500" />
+                        <Clock className="w-4 h-4 text-black" />
                         {formatTime(attendance.checkInTime)}
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-slate-500" />
+                        <Clock className="w-4 h-4 text-black" />
                         {formatTime(attendance.checkOutTime)}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-slate-400 text-xs">
+                    <td className="px-6 py-4 text-black text-xs">
                       <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-slate-500" />
+                        <MapPin className="w-4 h-4 text-black" />
                         <span className="truncate max-w-[150px]" title={attendance.location}>
                           {attendance.location || 'N/A'}
                         </span>
@@ -149,7 +149,7 @@ const Attendances = () => {
                     <td className="px-6 py-4 text-right">
                       <button
                         onClick={() => handleEditClick(attendance)}
-                        className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors inline-flex items-center gap-1"
+                        className="p-2 text-black hover:text-black hover:bg-gray-100 rounded-lg transition-colors inline-flex items-center gap-1"
                         title="Edit Attendance"
                       >
                         <Edit2 className="w-4 h-4" />

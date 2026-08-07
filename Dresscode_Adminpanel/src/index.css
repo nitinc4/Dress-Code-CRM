@@ -3,11 +3,13 @@
 
 @theme {
   --font-sans: 'Inter', sans-serif;
-  --color-primary: #8b5cf6; /* violet-500 */
+  --color-gold-400: #FACC15;
+  --color-gold-500: #EAB308;
+  --color-gold-600: #CA8A04;
 }
 
 @layer base {
   body {
-    @apply bg-zinc-950 text-zinc-100 antialiased selection:bg-indigo-500/30;
+    @apply bg-gray-50 text-black antialiased selection:bg-gold-500/30;
   }
 }

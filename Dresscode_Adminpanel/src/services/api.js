@@ -46,7 +46,7 @@ const getMockAttendances = () => {
 export const attendanceService = {
   getAll: async () => {
     try {
-      const response = await api.get('/api/attendances');
+      const response = await api.get('/api/attendance');
       return response.data;
     } catch (error) {
       console.warn("Failed to fetch attendances, returning mock data.", error);
@@ -55,11 +55,83 @@ export const attendanceService = {
   },
   update: async (id, data) => {
     try {
-      const response = await api.put(`/api/attendances/${id}`, data);
+      const response = await api.put(`/api/attendance/${id}`, data);
       return response.data;
     } catch (error) {
       console.warn("Failed to update attendance on server, simulating success.", error);
       return { _id: id, ...data }; // Simulate successful update
+    }
+  }
+};
+
+export const usersService = {
+  getAll: async () => {
+    try {
+      const response = await api.get('/api/auth');
+      return response.data;
+    } catch (error) {
+      console.error("Failed to fetch users:", error);
+      throw error;
+    }
+  }
+};
+
+export const productsService = {
+  getAll: async () => {
+    try {
+      const response = await api.get('/api/products');
+      return response.data;
+    } catch (error) {
+      console.error("Failed to fetch products:", error);
+      throw error;
+    }
+  }
+};
+
+export const ordersService = {
+  getAll: async () => {
+    try {
+      const response = await api.get('/api/orders');
+      return response.data;
+    } catch (error) {
+      console.error("Failed to fetch orders:", error);
+      throw error;
+    }
+  }
+};
+
+export const inventoryService = {
+  getAll: async () => {
+    try {
+      const response = await api.get('/api/inventory');
+      return response.data;
+    } catch (error) {
+      console.error("Failed to fetch inventory:", error);
+      throw error;
+    }
+  }
+};
+
+export const customersService = {
+  getAll: async () => {
+    try {
+      const response = await api.get('/api/customers');
+      return response.data;
+    } catch (error) {
+      console.error("Failed to fetch customers:", error);
+      throw error;
+    }
+  }
+};
+
+export const leaveService = {
+  getAll: async () => {
+    try {
+      const response = await api.get('/api/leave');
+      return response.data;
+    } catch (error) {
+      console.error("Failed to fetch leaves:", error);
+      throw error;
     }
   }
 };
