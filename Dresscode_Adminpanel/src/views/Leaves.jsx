@@ -94,8 +94,8 @@ const Leaves = () => {
                           <User className="w-5 h-5" />
                         </div>
                         <div>
-                          <div className="font-medium text-black">{leave.employeeName || 'Unknown Employee'}</div>
-                          <div className="text-xs text-gray-500 font-mono mt-0.5">ID: {leave.employeeId?.slice(-6) || 'N/A'}</div>
+                          <div className="font-medium text-black">{leave.userId?.name || 'Unknown Employee'}</div>
+                          <div className="text-xs text-gray-500 font-mono mt-0.5">ID: {leave.userId?._id?.slice(-6) || leave.userId?.slice?.(-6) || 'N/A'}</div>
                         </div>
                       </div>
                     </td>
@@ -105,10 +105,10 @@ const Leaves = () => {
                     <td className="px-6 py-4">
                       <div className="flex flex-col text-gray-600 gap-1">
                         <span className="flex items-center gap-1 text-xs">
-                          <CalendarIcon className="w-3 h-3 text-gray-400" /> Start: {formatDate(leave.startDate)}
+                          <CalendarIcon className="w-3 h-3 text-gray-400" /> Start: {formatDate(leave.fromDate)}
                         </span>
                         <span className="flex items-center gap-1 text-xs">
-                          <CalendarIcon className="w-3 h-3 text-gray-400" /> End: {formatDate(leave.endDate)}
+                          <CalendarIcon className="w-3 h-3 text-gray-400" /> End: {formatDate(leave.toDate)}
                         </span>
                       </div>
                     </td>

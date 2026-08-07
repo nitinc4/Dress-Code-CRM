@@ -9,6 +9,7 @@ import Orders from './views/Orders';
 import Inventories from './views/Inventories';
 import Customers from './views/Customers';
 import Leaves from './views/Leaves';
+import Settings from './views/Settings';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 
@@ -29,6 +30,7 @@ function App() {
               <Route path="/inventory" element={<Inventories />} />
               <Route path="/customers" element={<Customers />} />
               <Route path="/leaves" element={<Leaves />} />
+              <Route path="/settings" element={<Settings />} />
             </Route>
           </Route>
         </Routes>

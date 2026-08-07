@@ -127,7 +127,7 @@ export const customersService = {
 export const leaveService = {
   getAll: async () => {
     try {
-      const response = await api.get('/api/leave');
+      const response = await api.get('/api/leave/all');
       return response.data;
     } catch (error) {
       console.error("Failed to fetch leaves:", error);
