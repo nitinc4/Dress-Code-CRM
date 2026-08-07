@@ -1,12 +1,13 @@
 const mongoose = require('mongoose');
 
 const adminSchema = new mongoose.Schema({
-  adminId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
-  name: { type: String, required: true },
   email: { type: String, required: true },
-  role: { type: String, required: true },
-  loginTime: { type: Date, default: Date.now }
+  password: { type: String, required: true },
+  name: { type: String, default: 'Admin' },
+  role: { type: String, default: 'admin' },
+  loginTime: { type: Date }
 }, {
+  collection: 'admin', // Explicitly map to the "admin" collection
   timestamps: true // Automatically adds createdAt and updatedAt
 });
 

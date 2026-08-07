@@ -86,15 +86,27 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Please provide phone or email' });
     }
 
-    // Quick patch: If the admin user in the database only has a phone number (from old seed),
-    // and the user is trying to log in with the default admin email, assign it to them.
-    if (identifier === 'admin@dresscode.com') {
-      await User.updateOne(
-        { role: 'admin', $or: [{ email: { $exists: false } }, { email: null }, { email: "" }] },
-        { $set: { email: 'admin@dresscode.com' } }
-      );
+    // 1. Check if it's an Admin trying to log in via the dedicated admin collection
+    if (email) {
+      const admin = await Admin.findOne({ email: identifier });
+      if (admin) {
+        // Checking against plain text password as stored in the admin collection
+        if (password !== admin.password) {
+          return res.status(400).json({ message: 'Invalid credentials' });
+        }
+        
+        // Update login time
+        admin.loginTime = new Date();
+        await admin.save();
+
+        const payload = { userId: admin._id, role: admin.role || 'admin' };
+        const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+
+        return res.json({ token, user: { id: admin._id, name: admin.name || 'Admin', role: admin.role || 'admin' } });
+      }
     }
 
+    // 2. Fallback to User collection (for employees/customers)
     const user = await User.findOne({ 
       $or: [{ phone: identifier }, { email: identifier }] 
     });
@@ -106,20 +118,6 @@ router.post('/login', async (req, res) => {
 
     const payload = { userId: user._id, role: user.role };
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
-
-    if (user.role === 'admin') {
-      await Admin.findOneAndUpdate(
-        { adminId: user._id },
-        {
-          adminId: user._id,
-          name: user.name,
-          email: user.email || user.phone,
-          role: user.role,
-          loginTime: new Date()
-        },
-        { upsert: true, new: true, setDefaultsOnInsert: true }
-      );
-    }
 
     res.json({ token, user: { id: user._id, name: user.name, role: user.role } });
   } catch (error) {
