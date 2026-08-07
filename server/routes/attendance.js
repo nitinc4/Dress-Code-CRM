@@ -62,8 +62,9 @@ router.get('/user/:userId', async (req, res) => {
 // Get all attendances (for admin panel)
 router.get('/', async (req, res) => {
   try {
-    // Optionally populate user details if needed, for now just fetch all
-    const allAttendances = await Attendance.find().sort({ checkInTime: -1 });
+    const allAttendances = await Attendance.find()
+      .populate('userId', 'name phone')
+      .sort({ checkInTime: -1 });
     res.json(allAttendances);
   } catch (error) {
     res.status(500).json({ error: error.message });

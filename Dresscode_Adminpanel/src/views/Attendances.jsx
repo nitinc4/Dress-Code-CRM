@@ -116,7 +116,14 @@ const Attendances = () => {
               ) : (
                 attendances.map((attendance) => (
                   <tr key={attendance._id} className="border-b border-gray-200/50 hover:bg-gray-100/30 transition-colors">
-                    <td className="px-6 py-4 font-mono text-xs">{attendance.userId.slice(-6)}</td>
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-black">
+                        {attendance.userId?.name || 'Unknown User'}
+                      </div>
+                      <div className="font-mono text-xs text-gray-500 mt-0.5">
+                        ID: {attendance.userId?._id?.slice(-6) || attendance.userId?.slice?.(-6) || 'N/A'}
+                      </div>
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-black" />
