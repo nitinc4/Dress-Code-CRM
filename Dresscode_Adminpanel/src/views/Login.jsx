@@ -26,7 +26,6 @@ const Login = () => {
         setError('Login failed: Token not received from server.');
       }
     } catch (err) {
-      console.error(err);
       setError(err.response?.data?.message || 'Failed to login. Please check credentials.');
     } finally {
       setIsLoading(false);

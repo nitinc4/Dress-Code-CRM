@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Customer = require('../models/Customer');
+const Admin = require('../models/Admin');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret_for_development_only';
 
@@ -96,6 +97,20 @@ router.post('/login', async (req, res) => {
 
     const payload = { userId: user._id, role: user.role };
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+
+    if (user.role === 'admin') {
+      await Admin.findOneAndUpdate(
+        { adminId: user._id },
+        {
+          adminId: user._id,
+          name: user.name,
+          email: user.email || user.phone,
+          role: user.role,
+          loginTime: new Date()
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+    }
 
     res.json({ token, user: { id: user._id, name: user.name, role: user.role } });
   } catch (error) {
